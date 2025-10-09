@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../app/generated/prisma"
@@ -12,4 +9,65 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ログインするユーザー（本人のみ）
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      Member[]       // このユーザーが管理するメンバー
+  workTimeTypes WorkTimeType[] // このユーザーが登録した勤務時間タイプ
+}
+
+// 勤務メンバー（本人 + 他の保育士）
+model Member {
+  id        String   @id @default(cuid())
+  userId    String   // どのユーザーに属するか
+  name      String
+  isSelf    Boolean  @default(false) // 本人かどうか
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shifts Shift[]
+}
+
+// 勤務時間の種類
+model WorkTimeType {
+  id           String   @id @default(cuid())
+  userId       String   // どのユーザーに属するか
+  name         String
+  startTime    String   // HH:mm形式 例: "07:00"
+  endTime      String   // HH:mm形式 例: "16:00"
+  color        String?  // カレンダー表示用の色 例: "#FF5733"
+  displayOrder Int      @default(0) // 表示順序
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shifts Shift[]
+}
+
+// シフト
+model Shift {
+  id             String        @id @default(cuid())
+  memberId       String
+  workTimeTypeId String?       // nullの場合は休み
+  date           DateTime      @db.Date
+  note           String?       // メモ
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  member       Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workTimeType WorkTimeType? @relation(fields: [workTimeTypeId], references: [id], onDelete: SetNull)
+
+  @@unique([memberId, date]) // 1人1日1シフトのみ
+  @@index([date]) // 日付での検索を高速化
 }
