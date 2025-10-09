@@ -92,6 +92,7 @@ This project uses **Biome** (not ESLint/Prettier) for linting and formatting:
 - Indentation: 2 spaces
 - Import organization: automatically enabled
 - Next.js and React domains are enabled with recommended rules
+- **Type imports**: Always use `import type` for type-only imports (enforced by Biome's `useImportType` rule)
 
 **Important**: A PostToolUse hook automatically formats TypeScript files with Biome after Write/Edit operations.
 
