@@ -13,6 +13,7 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@auth/core": "0.40.0",
     "@auth/prisma-adapter": "^2.11.0",
     "@prisma/client": "^6.17.0",
     "bcryptjs": "^3.0.2",
@@ -31,5 +32,8 @@
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@auth/core": "0.40.0"
   }
 }
