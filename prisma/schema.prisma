@@ -13,15 +13,19 @@ datasource db {
 
 // ログインするユーザー（本人のみ）
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // Credentials Provider用
+  name          String
+  emailVerified DateTime? // NextAuth用（メール確認）
+  image         String?   // NextAuth用（プロフィール画像）
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  members      Member[]       // このユーザーが管理するメンバー
+  members       Member[]       // このユーザーが管理するメンバー
   workTimeTypes WorkTimeType[] // このユーザーが登録した勤務時間タイプ
+  accounts      Account[]      // NextAuth用
+  sessions      Session[]      // NextAuth用
 }
 
 // 勤務メンバー（本人 + 他の保育士）
@@ -70,4 +74,41 @@ model Shift {
 
   @@unique([memberId, date]) // 1人1日1シフトのみ
   @@index([date]) // 日付での検索を高速化
+}
+
+// NextAuth用のモデル
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
