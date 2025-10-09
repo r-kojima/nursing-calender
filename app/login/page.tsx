@@ -1,32 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
+import { SuccessMessage } from "./_components/SuccessMessage";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const successMessage = searchParams.get("success");
-    if (successMessage) {
-      setSuccess(successMessage);
-    }
-  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
     setIsLoading(true);
 
     try {
@@ -103,9 +94,9 @@ export default function LoginPage() {
             <div className="text-error text-sm text-center">{error}</div>
           )}
 
-          {success && (
-            <div className="text-success text-sm text-center">{success}</div>
-          )}
+          <Suspense fallback={null}>
+            <SuccessMessage />
+          </Suspense>
 
           <div>
             <button
