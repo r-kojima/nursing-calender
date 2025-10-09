@@ -85,6 +85,44 @@ prisma/
 └── migrations/        # Database migration files
 ```
 
+## Design System and Styling
+
+### Theme Colors
+
+This application uses an **orange-based color theme** to create a warm and approachable interface suitable for nursery school staff. Always use these theme colors when implementing UI components:
+
+**Primary Colors (Orange):**
+- `bg-primary` / `text-primary`: Main orange (#FF6B35) - Use for primary buttons, CTAs, and important highlights
+- `bg-primary-dark` / `text-primary-dark`: Dark orange (#E85D2F) - Use for hover states
+- `bg-primary-light` / `text-primary-light`: Light orange (#FF8C5A) - Use for subtle highlights
+- `bg-primary-pale` / `text-primary-pale`: Pale orange (#FFE5D9) - Use for backgrounds and badges
+
+**Accent Colors:**
+- `text-accent-blue`: Blue (#4A90E2) - Use for links and informational elements
+- `text-accent`: Peach orange (#FFB347) - Use for secondary highlights
+
+**Status Colors:**
+- `text-success`: Green (#10B981) - Use for success messages
+- `text-error`: Red (#EF4444) - Use for error messages
+- `text-warning`: Yellow (#F59E0B) - Use for warnings
+
+**Background/Text:**
+- `bg-background` / `text-foreground`: Automatically adapts to light/dark mode
+
+### Dark Mode
+
+- Dark mode is implemented using a `.dark` class on the `<html>` element
+- All theme colors automatically adjust for dark mode
+- Use Tailwind's `dark:` variant for dark mode-specific styles
+- Theme toggle component is available in the top-right corner (`app/components/ThemeToggle.tsx`)
+
+### Styling Guidelines
+
+1. **Prioritize theme colors**: Always use custom theme colors over default Tailwind colors for brand consistency
+2. **Use semantic naming**: Choose colors based on their purpose (primary for main actions, success for confirmations, etc.)
+3. **Maintain contrast**: Ensure sufficient contrast ratios for accessibility
+4. **Consistent hover states**: Use `hover:bg-primary-dark` for orange buttons
+
 ## Code Style and Linting
 
 This project uses **Biome** (not ESLint/Prettier) for linting and formatting:
