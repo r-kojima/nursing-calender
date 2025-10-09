@@ -76,7 +76,9 @@ app/
 ├── lib/
 │   ├── auth.ts        # NextAuth configuration
 │   └── prisma.ts      # Prisma client singleton
-├── login/             # Login page
+├── login/
+│   ├── _components/   # Login-specific components (not routable)
+│   └── page.tsx       # Login page
 ├── signup/            # Signup page
 └── types/             # TypeScript type definitions
 
@@ -84,6 +86,11 @@ prisma/
 ├── schema.prisma      # Database schema
 └── migrations/        # Database migration files
 ```
+
+**Component Organization:**
+- Use `_components` directories within route folders to store page-specific components that should not be routable
+- The underscore prefix (`_`) prevents Next.js from treating the directory as a route segment
+- Example: `app/login/_components/SuccessMessage.tsx` is used by `app/login/page.tsx` but is not accessible via routing
 
 ## Design System and Styling
 
@@ -141,3 +148,4 @@ This project uses **Biome** (not ESLint/Prettier) for linting and formatting:
 3. **Next.js version**: 15.5.4 with React 19 and Turbopack enabled
 4. **Cascading deletes**: User deletion cascades to Members, WorkTimeTypes, and their related Shifts
 5. **Date handling**: Shifts use `@db.Date` type for date-only storage (no time component)
+6. **useSearchParams**: In Next.js 15, components using `useSearchParams()` must be wrapped in a `<Suspense>` boundary. Extract such components into separate files and wrap them with Suspense in the parent component.
