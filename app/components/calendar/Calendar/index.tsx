@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarGrid } from "./CalendarGrid";
-import { CalendarHeader } from "./CalendarHeader";
-import type { CalendarDay, ShiftData } from "./types";
+import { CalendarGrid } from "../CalendarGrid";
+import { CalendarHeader } from "../CalendarHeader";
+import type { CalendarDay, ShiftData } from "../types";
 
 export function Calendar() {
   const [year, setYear] = useState<number>(new Date().getFullYear());

@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { DayCell } from "./DayCell";
-import type { CalendarDay } from "./types";
+import { DayCell } from ".";
+import type { CalendarDay } from "../types";
 
 describe("DayCell", () => {
   const createDay = (overrides?: Partial<CalendarDay>): CalendarDay => ({

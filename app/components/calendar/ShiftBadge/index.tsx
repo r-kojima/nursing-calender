@@ -1,4 +1,4 @@
-import type { WorkTimeType } from "./types";
+import type { WorkTimeType } from "../types";
 
 type ShiftBadgeProps = {
   workTimeType: WorkTimeType | null;

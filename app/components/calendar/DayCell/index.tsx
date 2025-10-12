@@ -1,5 +1,5 @@
-import { ShiftBadge } from "./ShiftBadge";
-import type { CalendarDay } from "./types";
+import { ShiftBadge } from "../ShiftBadge";
+import type { CalendarDay } from "../types";
 
 type DayCellProps = {
   day: CalendarDay;

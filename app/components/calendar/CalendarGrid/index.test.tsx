@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { CalendarGrid } from "./CalendarGrid";
-import type { CalendarDay } from "./types";
+import { CalendarGrid } from ".";
+import type { CalendarDay } from "../types";
 
 describe("CalendarGrid", () => {
   const createDay = (

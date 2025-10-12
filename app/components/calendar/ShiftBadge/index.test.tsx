@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ShiftBadge } from "./ShiftBadge";
+import { ShiftBadge } from ".";
 
 describe("ShiftBadge", () => {
   it("休みの場合は「休」と表示される", () => {

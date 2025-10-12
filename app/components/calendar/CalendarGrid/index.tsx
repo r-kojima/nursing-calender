@@ -1,5 +1,5 @@
-import { DayCell } from "./DayCell";
-import type { CalendarDay } from "./types";
+import { DayCell } from "../DayCell";
+import type { CalendarDay } from "../types";
 
 type CalendarGridProps = {
   days: CalendarDay[];
