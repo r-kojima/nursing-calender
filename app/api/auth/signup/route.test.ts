@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
+import type { NextRequest } from "next/server";
 
 // Mock next/server
 vi.mock("next/server", () => ({
@@ -42,7 +43,7 @@ describe("POST /api/auth/signup", () => {
   const mockRequest = (body: unknown) =>
     ({
       json: async () => body,
-    }) as Request;
+    }) as NextRequest;
 
   beforeEach(() => {
     vi.clearAllMocks();
