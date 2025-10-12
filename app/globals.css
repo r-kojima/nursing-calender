@@ -3,32 +3,32 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #FFF9F5;
-  --foreground: #2D1E1A;
+  --background: #fff9f5;
+  --foreground: #2d1e1a;
 
   /* Orange theme colors */
-  --primary: #FF6B35;
-  --primary-dark: #E85D2F;
-  --primary-light: #FF8C5A;
-  --primary-pale: #FFE5D9;
+  --primary: #ff6b35;
+  --primary-dark: #e85d2f;
+  --primary-light: #ff8c5a;
+  --primary-pale: #ffe5d9;
 
-  --accent: #FFB347;
-  --accent-blue: #4A90E2;
+  --accent: #ffb347;
+  --accent-blue: #4a90e2;
 
-  --success: #10B981;
-  --error: #EF4444;
-  --warning: #F59E0B;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
 }
 
 /* Dark mode color overrides */
 .dark {
-  --background: #1A1512;
-  --foreground: #F5EDE7;
+  --background: #1a1512;
+  --foreground: #f5ede7;
 
   /* Slightly adjusted for dark mode */
-  --primary: #FF7A47;
-  --primary-dark: #FF6B35;
-  --primary-light: #FF9D70;
+  --primary: #ff7a47;
+  --primary-dark: #ff6b35;
+  --primary-light: #ff9d70;
 }
 
 @theme inline {
