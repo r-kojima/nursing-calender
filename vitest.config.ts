@@ -18,9 +18,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./app"),
+      "@/app": path.resolve(__dirname, "./app"),
       "next/server": path.resolve(
         __dirname,
-        "./node_modules/next/dist/server/web/exports/next-server.js",
+        "./node_modules/next/dist/server/web/exports/index.js",
       ),
     },
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"],

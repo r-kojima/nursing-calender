@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/app/lib/prisma";
+import type { PrismaClient } from "@/generated/prisma";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,14 +48,36 @@ export async function POST(request: NextRequest) {
     // パスワードのハッシュ化
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ユーザーの作成
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
+    // ユーザーとメンバーをトランザクションで作成
+    const user = await prisma.$transaction(
+      async (
+        tx: Omit<
+          PrismaClient,
+          "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+        >,
+      ) => {
+        // ユーザーの作成
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            name,
+          },
+        });
+
+        // 本人のメンバーを作成
+        await tx.member.create({
+          data: {
+            userId: newUser.id,
+            name: newUser.name,
+            isSelf: true,
+            isActive: true,
+          },
+        });
+
+        return newUser;
       },
-    });
+    );
 
     // パスワードを除いてレスポンスを返す
     const { password: _, ...userWithoutPassword } = user;
