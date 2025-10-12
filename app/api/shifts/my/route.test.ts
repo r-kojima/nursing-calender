@@ -1,12 +1,11 @@
-import type { Session } from "next-auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
 import { GET } from "./route";
 
 // モック
-vi.mock("@/lib/auth");
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/app/lib/auth");
+vi.mock("@/app/lib/prisma", () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
@@ -26,7 +25,7 @@ describe("GET /api/shifts/my", () => {
   });
 
   it("認証されていない場合は401を返す", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    vi.mocked(auth).mockResolvedValue(null as any);
 
     const request = new Request(
       "http://localhost:3000/api/shifts/my?year=2024&month=5",
@@ -41,7 +40,7 @@ describe("GET /api/shifts/my", () => {
   it("yearまたはmonthパラメータがない場合は400を返す", async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },
-    } as Session);
+    } as any);
 
     const request = new Request("http://localhost:3000/api/shifts/my");
     const response = await GET(request);
@@ -54,7 +53,7 @@ describe("GET /api/shifts/my", () => {
   it("無効なyearまたはmonthの場合は400を返す", async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },
-    } as Session);
+    } as any);
 
     const request = new Request(
       "http://localhost:3000/api/shifts/my?year=2024&month=13",
@@ -69,7 +68,7 @@ describe("GET /api/shifts/my", () => {
   it("ユーザーが見つからない場合は404を返す", async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },
-    } as Session);
+    } as any);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 
     const request = new Request(
@@ -85,7 +84,7 @@ describe("GET /api/shifts/my", () => {
   it("自分自身のMemberが見つからない場合は404を返す", async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },
-    } as Session);
+    } as any);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-1",
       email: "test@example.com",
@@ -111,7 +110,7 @@ describe("GET /api/shifts/my", () => {
   it("正常にシフトデータを取得できる", async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },
-    } as Session);
+    } as any);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-1",
       email: "test@example.com",
@@ -142,15 +141,10 @@ describe("GET /api/shifts/my", () => {
         updatedAt: new Date(),
         workTimeType: {
           id: "wtt-1",
-          userId: "user-1",
           name: "早番",
           startTime: "07:00",
           endTime: "16:00",
           color: "#FF6B35",
-          displayOrder: 0,
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       },
       {
@@ -163,7 +157,7 @@ describe("GET /api/shifts/my", () => {
         updatedAt: new Date(),
         workTimeType: null,
       },
-    ]);
+    ] as any);
 
     const request = new Request(
       "http://localhost:3000/api/shifts/my?year=2024&month=5",
