@@ -9,7 +9,7 @@ export function Calendar() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1); // 1-12
   const [shifts, setShifts] = useState<ShiftData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [shiftsLoading, setShiftsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // カレンダーの日付データを生成
@@ -69,7 +69,7 @@ export function Calendar() {
   // 月が変わったらシフトデータを再取得
   useEffect(() => {
     const fetchShifts = async () => {
-      setLoading(true);
+      setShiftsLoading(true);
       setError(null);
 
       try {
@@ -87,7 +87,7 @@ export function Calendar() {
         setError("シフトデータの取得に失敗しました");
         console.error("Error fetching shifts:", err);
       } finally {
-        setLoading(false);
+        setShiftsLoading(false);
       }
     };
 
@@ -119,22 +119,6 @@ export function Calendar() {
     setMonth(now.getMonth() + 1);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-foreground">読み込み中...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-error">{error}</p>
-      </div>
-    );
-  }
-
   const calendarDays = generateCalendarDays();
 
   return (
@@ -146,7 +130,12 @@ export function Calendar() {
         onNextMonth={handleNextMonth}
         onToday={handleToday}
       />
-      <CalendarGrid days={calendarDays} />
+      {error && (
+        <div className="flex items-center justify-center p-4 mb-4 bg-error/10 rounded-lg">
+          <p className="text-error text-sm">{error}</p>
+        </div>
+      )}
+      <CalendarGrid days={calendarDays} isLoading={shiftsLoading} />
     </div>
   );
 }

@@ -4,9 +4,10 @@ import type { CalendarDay } from "../types";
 type DayCellProps = {
   day: CalendarDay;
   onClick?: (date: Date) => void;
+  isLoading?: boolean;
 };
 
-export function DayCell({ day, onClick }: DayCellProps) {
+export function DayCell({ day, onClick, isLoading = false }: DayCellProps) {
   const handleClick = () => {
     if (onClick) {
       onClick(day.date);
@@ -29,6 +30,25 @@ export function DayCell({ day, onClick }: DayCellProps) {
     ? "text-foreground"
     : "text-gray-400 dark:text-gray-600";
 
+  // シフト情報の表示内容を決定
+  const renderShiftContent = () => {
+    if (isLoading && day.isCurrentMonth) {
+      // ローディング中は当月のセルにスケルトンを表示
+      return (
+        <div className="w-full h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      );
+    }
+    if (day.shift) {
+      return (
+        <ShiftBadge
+          workTimeType={day.shift.workTimeType}
+          className="w-full text-center"
+        />
+      );
+    }
+    return null;
+  };
+
   if (onClick) {
     return (
       <button
@@ -41,13 +61,8 @@ export function DayCell({ day, onClick }: DayCellProps) {
           {day.date.getDate()}
         </div>
 
-        {/* シフトバッジ */}
-        {day.shift && (
-          <ShiftBadge
-            workTimeType={day.shift.workTimeType}
-            className="w-full text-center"
-          />
-        )}
+        {/* シフトバッジまたはローディング */}
+        {renderShiftContent()}
       </button>
     );
   }
@@ -59,13 +74,8 @@ export function DayCell({ day, onClick }: DayCellProps) {
         {day.date.getDate()}
       </div>
 
-      {/* シフトバッジ */}
-      {day.shift && (
-        <ShiftBadge
-          workTimeType={day.shift.workTimeType}
-          className="w-full text-center"
-        />
-      )}
+      {/* シフトバッジまたはローディング */}
+      {renderShiftContent()}
     </div>
   );
 }

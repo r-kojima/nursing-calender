@@ -4,11 +4,16 @@ import type { CalendarDay } from "../types";
 type CalendarGridProps = {
   days: CalendarDay[];
   onDayClick?: (date: Date) => void;
+  isLoading?: boolean;
 };
 
 const weekdayNames = ["日", "月", "火", "水", "木", "金", "土"];
 
-export function CalendarGrid({ days, onDayClick }: CalendarGridProps) {
+export function CalendarGrid({
+  days,
+  onDayClick,
+  isLoading = false,
+}: CalendarGridProps) {
   return (
     <div className="w-full">
       {/* 曜日ヘッダー */}
@@ -40,6 +45,7 @@ export function CalendarGrid({ days, onDayClick }: CalendarGridProps) {
             key={`${day.date.getTime()}-${index}`}
             day={day}
             onClick={onDayClick}
+            isLoading={isLoading}
           />
         ))}
       </div>
