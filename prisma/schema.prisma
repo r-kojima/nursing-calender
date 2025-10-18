@@ -23,7 +23,7 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   members       Member[]       // このユーザーが管理するメンバー
-  workTimeTypes WorkTimeType[] // このユーザーが登録した勤務時間タイプ
+  workTimeTypes WorkTimeType[] // このユーザーが登録したシフトパターンタイプ
   accounts      Account[]      // NextAuth用
   sessions      Session[]      // NextAuth用
 }
@@ -42,7 +42,7 @@ model Member {
   shifts Shift[]
 }
 
-// 勤務時間の種類
+// シフトパターンの種類
 model WorkTimeType {
   id           String   @id @default(cuid())
   userId       String   // どのユーザーに属するか

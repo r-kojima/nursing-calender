@@ -47,7 +47,7 @@ export function WorkTimeTypeCard({
       onToggle();
     } catch (error) {
       console.error("Error toggling work time type:", error);
-      alert("勤務時間の切り替えに失敗しました");
+      alert("シフトパターンの切り替えに失敗しました");
     } finally {
       setIsToggling(false);
     }
@@ -70,7 +70,7 @@ export function WorkTimeTypeCard({
           {startTime.slice(0, 2)}
         </div>
 
-        {/* 勤務時間情報 */}
+        {/* シフトパターン情報 */}
         <div className="flex-1">
           <h3 className="font-semibold text-foreground">
             {name}

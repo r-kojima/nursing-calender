@@ -50,10 +50,10 @@ export function WorkTimeTypeListClient({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-foreground">
-              勤務時間の設定
+              シフトパターンの設定
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              シフトで使用する勤務時間を管理します
+              シフトで使用するシフトパターンを管理します
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export function WorkTimeTypeListClient({
           </button>
         </div>
 
-        {/* 勤務時間一覧 */}
+        {/* シフトパターン一覧 */}
         {workTimeTypes.length === 0 ? (
           <div className="flex items-center justify-center py-16 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
             <div className="text-center">
@@ -90,7 +90,7 @@ export function WorkTimeTypeListClient({
                 未設定
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                勤務時間がまだ登録されていません
+                シフトパターンがまだ登録されていません
               </p>
             </div>
           </div>

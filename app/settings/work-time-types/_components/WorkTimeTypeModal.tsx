@@ -124,7 +124,7 @@ export function WorkTimeTypeModal({
     } catch (err) {
       console.error("Error saving work time type:", err);
       setError(
-        err instanceof Error ? err.message : "勤務時間の保存に失敗しました",
+        err instanceof Error ? err.message : "シフトパターンの保存に失敗しました",
       );
     } finally {
       setIsSubmitting(false);
@@ -136,7 +136,7 @@ export function WorkTimeTypeModal({
 
     if (
       !window.confirm(
-        "この勤務時間を完全に削除してもよろしいですか？\nこの操作は取り消せません。\n関連するシフトの勤務時間は「休み」に変更されます。",
+        "このシフトパターンを完全に削除してもよろしいですか？\nこの操作は取り消せません。\n関連するシフトのシフトパターンは「休み」に変更されます。",
       )
     ) {
       return;
@@ -160,7 +160,7 @@ export function WorkTimeTypeModal({
     } catch (err) {
       console.error("Error deleting work time type:", err);
       setError(
-        err instanceof Error ? err.message : "勤務時間の削除に失敗しました",
+        err instanceof Error ? err.message : "シフトパターンの削除に失敗しました",
       );
     } finally {
       setIsSubmitting(false);
@@ -184,7 +184,7 @@ export function WorkTimeTypeModal({
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-foreground">
-            {isEditing ? "勤務時間の編集" : "勤務時間の作成"}
+            {isEditing ? "シフトパターンの編集" : "シフトパターンの作成"}
           </h2>
           <button
             type="button"
