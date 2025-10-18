@@ -1,60 +1,8 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import type { WorkTimeType } from "@/app/components/calendar/types";
+import { getWorkTimeTypes } from "../_lib/getWorkTimeTypes";
 import { WorkTimeTypeCard } from "./WorkTimeTypeCard";
 
-export function WorkTimeTypeListPage() {
-  const [workTimeTypes, setWorkTimeTypes] = useState<WorkTimeType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchWorkTimeTypes = async () => {
-      try {
-        const response = await fetch("/api/work-time-types");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch work time types");
-        }
-
-        const data = await response.json();
-        setWorkTimeTypes(data.workTimeTypes || []);
-      } catch (err) {
-        setError("勤務時間の取得に失敗しました");
-        console.error("Error fetching work time types:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchWorkTimeTypes();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <p className="text-error font-medium">{error}</p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 text-sm font-medium text-primary hover:text-primary-dark transition-colors"
-          >
-            再読み込み
-          </button>
-        </div>
-      </div>
-    );
-  }
+export async function WorkTimeTypeListPage() {
+  const workTimeTypes = await getWorkTimeTypes();
 
   return (
     <div className="space-y-4">
