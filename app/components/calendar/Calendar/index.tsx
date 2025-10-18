@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { CalendarHeader } from "../CalendarHeader";
-import type { Member, MemberRow, ShiftData } from "../types";
+import { ShiftEditModal } from "../ShiftEditModal";
+import type { Member, MemberRow, ShiftData, WorkTimeType } from "../types";
 
 export function Calendar() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
@@ -14,9 +15,20 @@ export function Calendar() {
   });
   const [members, setMembers] = useState<Member[]>([]);
   const [shifts, setShifts] = useState<ShiftData[]>([]);
+  const [workTimeTypes, setWorkTimeTypes] = useState<WorkTimeType[]>([]);
   const [shiftsLoading, setShiftsLoading] = useState<boolean>(true);
   const [membersLoading, setMembersLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // モーダル関連の状態
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editingDate, setEditingDate] = useState<Date | null>(null);
+  const [editingShift, setEditingShift] = useState<{
+    id: string;
+    workTimeTypeId: string | null;
+    note: string | null;
+  } | null>(null);
 
   // メンバーごとのカレンダーデータを生成
   const generateMemberRows = (): MemberRow[] => {
@@ -73,6 +85,26 @@ export function Calendar() {
     };
 
     fetchMembers();
+  }, []);
+
+  // WorkTimeTypes一覧を取得
+  useEffect(() => {
+    const fetchWorkTimeTypes = async () => {
+      try {
+        const response = await fetch("/api/work-time-types");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch work time types");
+        }
+
+        const data = await response.json();
+        setWorkTimeTypes(data.workTimeTypes || []);
+      } catch (err) {
+        console.error("Error fetching work time types:", err);
+      }
+    };
+
+    fetchWorkTimeTypes();
   }, []);
 
   // 月が変わったら選択日を1日に変更
@@ -139,11 +171,59 @@ export function Calendar() {
     setMonth(now.getMonth() + 1);
   };
 
-  const handleDayClick = (date: Date) => {
-    const clickedDate = new Date(date);
-    clickedDate.setHours(0, 0, 0, 0);
-    setSelectedDate(clickedDate);
-    // TODO: Phase 3でモーダルを開く処理を追加
+  const handleDayClick = (
+    member: Member,
+    date: Date,
+    shift: ShiftData | null,
+  ) => {
+    setEditingMember(member);
+    setEditingDate(date);
+    if (shift) {
+      setEditingShift({
+        id: shift.id,
+        workTimeTypeId: shift.workTimeType?.id || null,
+        note: shift.note,
+      });
+    } else {
+      setEditingShift(null);
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingMember(null);
+    setEditingDate(null);
+    setEditingShift(null);
+  };
+
+  const handleSaveShift = async (data: {
+    memberId: string;
+    date: string;
+    workTimeTypeId: string | null;
+    note: string;
+  }) => {
+    await fetch("/api/shifts/upsert", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    // シフトデータを再取得
+    const response = await fetch(`/api/shifts?year=${year}&month=${month}`);
+    const result = await response.json();
+    setShifts(result.shifts || []);
+  };
+
+  const handleDeleteShift = async (shiftId: string) => {
+    await fetch(`/api/shifts/${shiftId}`, {
+      method: "DELETE",
+    });
+
+    // シフトデータを再取得
+    const response = await fetch(`/api/shifts?year=${year}&month=${month}`);
+    const result = await response.json();
+    setShifts(result.shifts || []);
   };
 
   const memberRows = generateMemberRows();
@@ -203,14 +283,9 @@ export function Calendar() {
                       <td
                         key={dateKey}
                         className="border border-foreground/20 p-1 cursor-pointer hover:bg-primary/10 transition-colors"
-                        onClick={() => handleDayClick(day.date)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            handleDayClick(day.date);
-                          }
-                        }}
-                        tabIndex={0}
-                        role="button"
+                        onClick={() =>
+                          handleDayClick(row.member, day.date, day.shift)
+                        }
                       >
                         {day.shift ? (
                           <div
@@ -246,6 +321,16 @@ export function Calendar() {
           </table>
         </div>
       )}
+      <ShiftEditModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        member={editingMember}
+        date={editingDate}
+        initialShift={editingShift}
+        workTimeTypes={workTimeTypes}
+        onSave={handleSaveShift}
+        onDelete={handleDeleteShift}
+      />
     </div>
   );
 }
