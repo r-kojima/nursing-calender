@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarGrid } from "../CalendarGrid";
 import { CalendarHeader } from "../CalendarHeader";
-import type { CalendarDay, ShiftData } from "../types";
+import type { Member, MemberRow, ShiftData } from "../types";
 
 export function Calendar() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
@@ -13,63 +12,68 @@ export function Calendar() {
     today.setHours(0, 0, 0, 0);
     return today;
   });
+  const [members, setMembers] = useState<Member[]>([]);
   const [shifts, setShifts] = useState<ShiftData[]>([]);
   const [shiftsLoading, setShiftsLoading] = useState<boolean>(true);
+  const [membersLoading, setMembersLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // カレンダーの日付データを生成
-  const generateCalendarDays = (): CalendarDay[] => {
-    const firstDay = new Date(year, month - 1, 1);
-    const lastDay = new Date(year, month, 0);
-    const firstDayOfWeek = firstDay.getDay(); // 0 (Sunday) - 6 (Saturday)
-    const daysInMonth = lastDay.getDate();
-
-    const days: CalendarDay[] = [];
+  // メンバーごとのカレンダーデータを生成
+  const generateMemberRows = (): MemberRow[] => {
+    const daysInMonth = new Date(year, month, 0).getDate();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 前月の日付を追加
-    const prevMonthLastDay = new Date(year, month - 1, 0).getDate();
-    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-      const date = new Date(year, month - 2, prevMonthLastDay - i);
-      days.push({
-        date,
-        isCurrentMonth: false,
-        isToday: date.getTime() === today.getTime(),
-        shift: null,
-      });
-    }
+    return members.map((member) => {
+      const days = [];
 
-    // 当月の日付を追加
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month - 1, day);
-      const dateStr = date.toISOString().split("T")[0];
-      const shift = shifts.find((s) => s.date === dateStr) || null;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        const dateStr = date.toISOString().split("T")[0];
+        const shift =
+          shifts.find((s) => s.memberId === member.id && s.date === dateStr) ||
+          null;
 
-      days.push({
-        date,
-        isCurrentMonth: true,
-        isToday: date.getTime() === today.getTime(),
-        shift,
-      });
-    }
-
-    // 次月の日付を追加（グリッドを埋めるため）
-    const remainingCells = 7 - (days.length % 7);
-    if (remainingCells < 7) {
-      for (let day = 1; day <= remainingCells; day++) {
-        const date = new Date(year, month, day);
         days.push({
           date,
-          isCurrentMonth: false,
+          isCurrentMonth: true,
           isToday: date.getTime() === today.getTime(),
-          shift: null,
+          shift,
         });
       }
-    }
 
-    return days;
+      return {
+        member,
+        days,
+      };
+    });
   };
+
+  // メンバー一覧を取得
+  useEffect(() => {
+    const fetchMembers = async () => {
+      setMembersLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/api/members");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch members");
+        }
+
+        const data = await response.json();
+        setMembers(data.members || []);
+      } catch (err) {
+        setError("メンバーデータの取得に失敗しました");
+        console.error("Error fetching members:", err);
+      } finally {
+        setMembersLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, []);
 
   // 月が変わったら選択日を1日に変更
   useEffect(() => {
@@ -84,16 +88,14 @@ export function Calendar() {
     }
   }, [year, month, selectedDate]);
 
-  // 月が変わったらシフトデータを再取得
+  // 月が変わったらシフトデータを再取得（全メンバー分）
   useEffect(() => {
     const fetchShifts = async () => {
       setShiftsLoading(true);
       setError(null);
 
       try {
-        const response = await fetch(
-          `/api/shifts/my?year=${year}&month=${month}`,
-        );
+        const response = await fetch(`/api/shifts?year=${year}&month=${month}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch shifts");
@@ -141,12 +143,14 @@ export function Calendar() {
     const clickedDate = new Date(date);
     clickedDate.setHours(0, 0, 0, 0);
     setSelectedDate(clickedDate);
+    // TODO: Phase 3でモーダルを開く処理を追加
   };
 
-  const calendarDays = generateCalendarDays();
+  const memberRows = generateMemberRows();
+  const isLoading = shiftsLoading || membersLoading;
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full mx-auto">
       <CalendarHeader
         year={year}
         month={month}
@@ -159,12 +163,89 @@ export function Calendar() {
           <p className="text-error text-sm">{error}</p>
         </div>
       )}
-      <CalendarGrid
-        days={calendarDays}
-        onDayClick={handleDayClick}
-        selectedDate={selectedDate}
-        isLoading={shiftsLoading}
-      />
+      {isLoading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-foreground/60">読み込み中...</div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-background">
+                <th className="sticky left-0 z-10 bg-background border border-foreground/20 p-2 text-sm font-semibold text-foreground min-w-[100px]">
+                  メンバー
+                </th>
+                {Array.from(
+                  { length: new Date(year, month, 0).getDate() },
+                  (_, i) => {
+                    const day = i + 1;
+                    return (
+                      <th
+                        key={`day-${day}`}
+                        className="border border-foreground/20 p-2 text-sm font-semibold text-foreground min-w-[80px]"
+                      >
+                        {day}
+                      </th>
+                    );
+                  },
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {memberRows.map((row) => (
+                <tr key={row.member.id}>
+                  <td className="sticky left-0 z-10 bg-background border border-foreground/20 p-2 text-sm font-medium text-foreground">
+                    {row.member.name}
+                  </td>
+                  {row.days.map((day) => {
+                    const dateKey = day.date.toISOString().split("T")[0];
+                    return (
+                      <td
+                        key={dateKey}
+                        className="border border-foreground/20 p-1 cursor-pointer hover:bg-primary/10 transition-colors"
+                        onClick={() => handleDayClick(day.date)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            handleDayClick(day.date);
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                      >
+                        {day.shift ? (
+                          <div
+                            className="rounded px-1 py-2 text-xs relative"
+                            style={{
+                              backgroundColor:
+                                day.shift.workTimeType?.color || "#e5e7eb",
+                              color: "#000",
+                            }}
+                          >
+                            <div className="font-semibold truncate">
+                              {day.shift.workTimeType?.name || "休み"}
+                            </div>
+                            {day.shift.workTimeType && (
+                              <div className="text-xs opacity-80">
+                                {day.shift.workTimeType.startTime}-
+                                {day.shift.workTimeType.endTime}
+                              </div>
+                            )}
+                            {day.shift.note && (
+                              <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-black rounded-full" />
+                            )}
+                          </div>
+                        ) : (
+                          <div className="h-12" />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

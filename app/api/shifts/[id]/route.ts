@@ -4,7 +4,7 @@ import { prisma } from "@/app/lib/prisma";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 認証チェック
@@ -22,9 +22,12 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // paramsをawait
+    const { id } = await params;
+
     // シフト取得（所有権チェックのためメンバー情報も含める）
     const shift = await prisma.shift.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         member: true,
       },
@@ -41,7 +44,7 @@ export async function DELETE(
 
     // 削除
     await prisma.shift.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
