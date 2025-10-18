@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Calendar } from "./components/calendar/Calendar";
+import { SettingsButton } from "./components/SettingsButton";
 import { auth } from "./lib/auth";
 
 export default async function Home() {
@@ -20,6 +21,7 @@ export default async function Home() {
         </div>
         <Calendar />
       </div>
+      <SettingsButton />
     </div>
   );
 }
