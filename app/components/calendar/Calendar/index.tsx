@@ -30,6 +30,11 @@ export function Calendar() {
     note: string | null;
   } | null>(null);
 
+  // シフト設定モード
+  const [isShiftSetupMode, setIsShiftSetupMode] = useState(false);
+  const [selectedMemberForSetup, setSelectedMemberForSetup] =
+    useState<Member | null>(null);
+
   // メンバーごとのカレンダーデータを生成
   const generateMemberRows = (): MemberRow[] => {
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -176,6 +181,11 @@ export function Calendar() {
     date: Date,
     shift: ShiftData | null,
   ) => {
+    // シフト設定モードの場合は何もしない（パターン選択で処理）
+    if (isShiftSetupMode) {
+      return;
+    }
+
     setEditingMember(member);
     setEditingDate(date);
     if (shift) {
@@ -188,6 +198,49 @@ export function Calendar() {
       setEditingShift(null);
     }
     setIsModalOpen(true);
+  };
+
+  const handleToggleShiftSetupMode = () => {
+    setIsShiftSetupMode(!isShiftSetupMode);
+    if (!isShiftSetupMode && members.length > 0) {
+      // シフト設定モードを開始する際、最初のメンバーを選択
+      setSelectedMemberForSetup(members[0]);
+    } else {
+      setSelectedMemberForSetup(null);
+    }
+  };
+
+  const handleQuickSetShift = async (workTimeTypeId: string | null) => {
+    if (!selectedMemberForSetup) return;
+
+    // 今月の全日にシフトを設定（簡易版）
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const promises = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dateStr = date.toISOString().split("T")[0];
+
+      promises.push(
+        fetch("/api/shifts/upsert", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            memberId: selectedMemberForSetup.id,
+            date: dateStr,
+            workTimeTypeId,
+            note: "",
+          }),
+        }),
+      );
+    }
+
+    await Promise.all(promises);
+
+    // シフトデータを再取得
+    const response = await fetch(`/api/shifts?year=${year}&month=${month}`);
+    const result = await response.json();
+    setShifts(result.shifts || []);
   };
 
   const handleModalClose = () => {
@@ -237,6 +290,8 @@ export function Calendar() {
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         onToday={handleToday}
+        isShiftSetupMode={isShiftSetupMode}
+        onToggleShiftSetupMode={handleToggleShiftSetupMode}
       />
       {error && (
         <div className="flex items-center justify-center p-4 mb-4 bg-error/10 rounded-lg">
@@ -319,6 +374,63 @@ export function Calendar() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {/* シフト設定モード */}
+      {isShiftSetupMode && selectedMemberForSetup && (
+        <div className="mt-4 p-4 bg-background border border-primary rounded-lg">
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              対象メンバー
+            </label>
+            <select
+              value={selectedMemberForSetup.id}
+              onChange={(e) => {
+                const member = members.find((m) => m.id === e.target.value);
+                if (member) setSelectedMemberForSetup(member);
+              }}
+              className="px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground"
+            >
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground mb-2">
+              月全体にパターンを適用
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickSetShift(null)}
+                className="px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                休み
+              </button>
+              {workTimeTypes
+                .filter((wtt) => wtt.isActive)
+                .map((wtt) => (
+                  <button
+                    key={wtt.id}
+                    type="button"
+                    onClick={() => handleQuickSetShift(wtt.id)}
+                    className="px-4 py-2 text-sm font-medium rounded-md transition-colors hover:opacity-80"
+                    style={{
+                      backgroundColor: wtt.color || "#e5e7eb",
+                      color: "#000",
+                    }}
+                  >
+                    {wtt.name}
+                    <div className="text-xs opacity-80">
+                      {wtt.startTime}-{wtt.endTime}
+                    </div>
+                  </button>
+                ))}
+            </div>
+          </div>
         </div>
       )}
       <ShiftEditModal

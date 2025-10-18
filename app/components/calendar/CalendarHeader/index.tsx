@@ -4,6 +4,8 @@ type CalendarHeaderProps = {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
+  isShiftSetupMode?: boolean;
+  onToggleShiftSetupMode?: () => void;
 };
 
 export function CalendarHeader({
@@ -12,6 +14,8 @@ export function CalendarHeader({
   onPrevMonth,
   onNextMonth,
   onToday,
+  isShiftSetupMode = false,
+  onToggleShiftSetupMode,
 }: CalendarHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-4 px-2">
@@ -22,6 +26,20 @@ export function CalendarHeader({
 
       {/* ナビゲーションボタン */}
       <div className="flex items-center gap-2">
+        {/* シフト設定ボタン */}
+        {onToggleShiftSetupMode && (
+          <button
+            type="button"
+            onClick={onToggleShiftSetupMode}
+            className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${
+              isShiftSetupMode
+                ? "bg-primary text-white hover:bg-primary-dark"
+                : "text-primary border border-primary hover:bg-primary-pale"
+            }`}
+          >
+            {isShiftSetupMode ? "完了" : "シフト設定"}
+          </button>
+        )}
         {/* 今月ボタン */}
         <button
           type="button"
