@@ -141,11 +141,64 @@ This project uses **Biome** (not ESLint/Prettier) for linting and formatting:
 
 **Important**: A PostToolUse hook automatically formats TypeScript files with Biome after Write/Edit operations.
 
+## Technology Stack
+
+- **Framework**: Next.js 15.5.4 (App Router) with React 19 and Turbopack enabled
+- **Database**: PostgreSQL + Prisma ORM
+- **Authentication**: NextAuth v5 beta (Credentials Provider)
+- **UI**: React 19 + Tailwind CSS
+- **State Management**: React Server Components + Client Components
+- **Linting/Formatting**: Biome
+
+## Security Considerations
+
+All features must adhere to the following security principles:
+
+1. **Authentication**: All API calls must include authentication checks using `auth()` from NextAuth
+2. **Authorization**: Users can only access and modify data they own (checked via `userId` in database queries)
+3. **Input Validation**: Implement validation on both client-side (user experience) and server-side (security)
+4. **SQL Injection Prevention**: Prisma automatically escapes queries; always use Prisma query builders, never raw SQL
+
+**Example authorization pattern:**
+```typescript
+const session = await auth();
+const data = await prisma.someModel.findMany({
+  where: { userId: session.user.id } // Always filter by userId
+});
+```
+
+## Performance Considerations
+
+1. **Server Components First**: Prefer Server Components for data fetching to leverage automatic caching and reduce client bundle size
+2. **Data Scoping**: Always fetch data with appropriate filters (e.g., by month for shifts, by userId for multi-tenant isolation)
+3. **Caching Strategy**:
+   - Server Components provide automatic caching for GET requests
+   - Use `router.refresh()` after mutations to revalidate cached data
+4. **Optimistic UI Updates**: For interactive features, update UI immediately and handle API calls in the background
+5. **API Optimization**: Use UPSERT operations to reduce unnecessary GET requests
+
+**Data fetching pattern:**
+```typescript
+// Server Component (automatic caching)
+export default async function Page() {
+  const data = await prisma.model.findMany({
+    where: { userId: session.user.id, date: { gte: startOfMonth } }
+  });
+  return <ClientComponent data={data} />;
+}
+```
+
+## Accessibility
+
+1. **Keyboard Navigation**: Ensure all interactive elements are keyboard accessible with proper focus management
+2. **Screen Reader Support**: Use appropriate ARIA labels and semantic HTML
+3. **Color Independence**: Never rely solely on color to convey information; always include text labels or icons
+4. **Focus Management**: Properly manage focus in modals and dynamic UI elements
+
 ## Key Implementation Notes
 
 1. **Database URL**: Expects `DATABASE_URL` environment variable for PostgreSQL connection
 2. **NextAuth version**: Using v5 beta (API differs from v4)
-3. **Next.js version**: 15.5.4 with React 19 and Turbopack enabled
-4. **Cascading deletes**: User deletion cascades to Members, WorkTimeTypes, and their related Shifts
-5. **Date handling**: Shifts use `@db.Date` type for date-only storage (no time component)
-6. **useSearchParams**: In Next.js 15, components using `useSearchParams()` must be wrapped in a `<Suspense>` boundary. Extract such components into separate files and wrap them with Suspense in the parent component.
+3. **Cascading deletes**: User deletion cascades to Members, WorkTimeTypes, and their related Shifts
+4. **Date handling**: Shifts use `@db.Date` type for date-only storage (no time component)
+5. **useSearchParams**: In Next.js 15, components using `useSearchParams()` must be wrapped in a `<Suspense>` boundary. Extract such components into separate files and wrap them with Suspense in the parent component.
