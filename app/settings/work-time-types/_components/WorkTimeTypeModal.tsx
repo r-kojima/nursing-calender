@@ -1,7 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { WorkTimeType } from "@/app/components/calendar/types";
+
+// 時間の選択肢（0-23時）
+function generateHourOptions(): string[] {
+  const options: string[] = [];
+  for (let hour = 0; hour < 24; hour++) {
+    options.push(hour.toString().padStart(2, "0"));
+  }
+  return options;
+}
+
+// 分の選択肢（5分刻み）
+function generateMinuteOptions(): string[] {
+  const options: string[] = [];
+  for (let minute = 0; minute < 60; minute += 5) {
+    options.push(minute.toString().padStart(2, "0"));
+  }
+  return options;
+}
 
 type WorkTimeTypeModalProps = {
   isOpen: boolean;
@@ -17,10 +35,14 @@ export function WorkTimeTypeModal({
   workTimeType,
 }: WorkTimeTypeModalProps) {
   const isEditing = !!workTimeType;
+  const hourOptions = useMemo(() => generateHourOptions(), []);
+  const minuteOptions = useMemo(() => generateMinuteOptions(), []);
 
   const [name, setName] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startHour, setStartHour] = useState("");
+  const [startMinute, setStartMinute] = useState("");
+  const [endHour, setEndHour] = useState("");
+  const [endMinute, setEndMinute] = useState("");
   const [color, setColor] = useState("#FF6B35");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,18 +51,24 @@ export function WorkTimeTypeModal({
   useEffect(() => {
     if (workTimeType) {
       setName(workTimeType.name);
-      setStartTime(workTimeType.startTime);
-      setEndTime(workTimeType.endTime);
+      const [sHour, sMinute] = workTimeType.startTime.split(":");
+      const [eHour, eMinute] = workTimeType.endTime.split(":");
+      setStartHour(sHour);
+      setStartMinute(sMinute);
+      setEndHour(eHour);
+      setEndMinute(eMinute);
       setColor(workTimeType.color || "#FF6B35");
     } else {
       // 新規作成時はリセット
       setName("");
-      setStartTime("");
-      setEndTime("");
+      setStartHour("");
+      setStartMinute("");
+      setEndHour("");
+      setEndMinute("");
       setColor("#FF6B35");
     }
     setError(null);
-  }, [workTimeType, isOpen]);
+  }, [workTimeType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,10 +80,13 @@ export function WorkTimeTypeModal({
       return;
     }
 
-    if (!startTime || !endTime) {
+    if (!startHour || !startMinute || !endHour || !endMinute) {
       setError("開始時刻と終了時刻を入力してください");
       return;
     }
+
+    const startTime = `${startHour}:${startMinute}`;
+    const endTime = `${endHour}:${endMinute}`;
 
     if (startTime >= endTime) {
       setError("開始時刻は終了時刻より前である必要があります");
@@ -141,14 +172,10 @@ export function WorkTimeTypeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* オーバーレイ */}
-      <div
+      <button
+        type="button"
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onClose();
-        }}
-        role="button"
-        tabIndex={0}
         aria-label="Close modal"
       />
 
@@ -213,38 +240,78 @@ export function WorkTimeTypeModal({
 
           {/* 開始時刻 */}
           <div>
-            <label
-              htmlFor="startTime"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
+            <span className="block text-sm font-medium text-foreground mb-1">
               開始時刻 <span className="text-error">*</span>
-            </label>
-            <input
-              id="startTime"
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              required
-            />
+            </span>
+            <div className="flex items-center gap-2">
+              <select
+                id="startHour"
+                value={startHour}
+                onChange={(e) => setStartHour(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              >
+                <option value="">時</option>
+                {hourOptions.map((hour) => (
+                  <option key={hour} value={hour}>
+                    {hour}
+                  </option>
+                ))}
+              </select>
+              <span className="text-foreground">:</span>
+              <select
+                id="startMinute"
+                value={startMinute}
+                onChange={(e) => setStartMinute(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              >
+                <option value="">分</option>
+                {minuteOptions.map((minute) => (
+                  <option key={minute} value={minute}>
+                    {minute}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* 終了時刻 */}
           <div>
-            <label
-              htmlFor="endTime"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
+            <span className="block text-sm font-medium text-foreground mb-1">
               終了時刻 <span className="text-error">*</span>
-            </label>
-            <input
-              id="endTime"
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              required
-            />
+            </span>
+            <div className="flex items-center gap-2">
+              <select
+                id="endHour"
+                value={endHour}
+                onChange={(e) => setEndHour(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              >
+                <option value="">時</option>
+                {hourOptions.map((hour) => (
+                  <option key={hour} value={hour}>
+                    {hour}
+                  </option>
+                ))}
+              </select>
+              <span className="text-foreground">:</span>
+              <select
+                id="endMinute"
+                value={endMinute}
+                onChange={(e) => setEndMinute(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              >
+                <option value="">分</option>
+                {minuteOptions.map((minute) => (
+                  <option key={minute} value={minute}>
+                    {minute}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* 色 */}
