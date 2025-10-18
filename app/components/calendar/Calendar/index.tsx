@@ -8,6 +8,11 @@ import type { CalendarDay, ShiftData } from "../types";
 export function Calendar() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1); // 1-12
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
   const [shifts, setShifts] = useState<ShiftData[]>([]);
   const [shiftsLoading, setShiftsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +71,19 @@ export function Calendar() {
     return days;
   };
 
+  // 月が変わったら選択日を1日に変更
+  useEffect(() => {
+    const selectedYear = selectedDate.getFullYear();
+    const selectedMonth = selectedDate.getMonth() + 1;
+
+    // 選択中の日付が表示中の月と異なる場合、選択日を表示中の月の1日に変更
+    if (selectedYear !== year || selectedMonth !== month) {
+      const newSelectedDate = new Date(year, month - 1, 1);
+      newSelectedDate.setHours(0, 0, 0, 0);
+      setSelectedDate(newSelectedDate);
+    }
+  }, [year, month, selectedDate]);
+
   // 月が変わったらシフトデータを再取得
   useEffect(() => {
     const fetchShifts = async () => {
@@ -119,6 +137,12 @@ export function Calendar() {
     setMonth(now.getMonth() + 1);
   };
 
+  const handleDayClick = (date: Date) => {
+    const clickedDate = new Date(date);
+    clickedDate.setHours(0, 0, 0, 0);
+    setSelectedDate(clickedDate);
+  };
+
   const calendarDays = generateCalendarDays();
 
   return (
@@ -135,7 +159,12 @@ export function Calendar() {
           <p className="text-error text-sm">{error}</p>
         </div>
       )}
-      <CalendarGrid days={calendarDays} isLoading={shiftsLoading} />
+      <CalendarGrid
+        days={calendarDays}
+        onDayClick={handleDayClick}
+        selectedDate={selectedDate}
+        isLoading={shiftsLoading}
+      />
     </div>
   );
 }

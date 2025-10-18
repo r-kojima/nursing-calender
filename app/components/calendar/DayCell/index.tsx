@@ -4,10 +4,16 @@ import type { CalendarDay } from "../types";
 type DayCellProps = {
   day: CalendarDay;
   onClick?: (date: Date) => void;
+  isSelected?: boolean;
   isLoading?: boolean;
 };
 
-export function DayCell({ day, onClick, isLoading = false }: DayCellProps) {
+export function DayCell({
+  day,
+  onClick,
+  isSelected = false,
+  isLoading = false,
+}: DayCellProps) {
   const handleClick = () => {
     if (onClick) {
       onClick(day.date);
@@ -19,9 +25,15 @@ export function DayCell({ day, onClick, isLoading = false }: DayCellProps) {
   const todayClasses = day.isToday
     ? "border-2 border-primary dark:border-primary"
     : "";
-  const currentMonthClasses = day.isCurrentMonth
-    ? "bg-white dark:bg-gray-800"
-    : "bg-gray-50 dark:bg-gray-900";
+  const selectedClasses = isSelected
+    ? "bg-primary-pale dark:bg-primary-dark/20"
+    : "";
+  const currentMonthClasses =
+    day.isCurrentMonth && !isSelected
+      ? "bg-white dark:bg-gray-800"
+      : !isSelected
+        ? "bg-gray-50 dark:bg-gray-900"
+        : "";
   const clickableClasses = onClick
     ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
     : "";
@@ -53,7 +65,7 @@ export function DayCell({ day, onClick, isLoading = false }: DayCellProps) {
     return (
       <button
         type="button"
-        className={`${baseClasses} ${todayClasses} ${currentMonthClasses} ${clickableClasses} w-full text-left`}
+        className={`${baseClasses} ${todayClasses} ${selectedClasses} ${currentMonthClasses} ${clickableClasses} w-full text-left`}
         onClick={handleClick}
       >
         {/* 日付表示 */}
@@ -68,7 +80,9 @@ export function DayCell({ day, onClick, isLoading = false }: DayCellProps) {
   }
 
   return (
-    <div className={`${baseClasses} ${todayClasses} ${currentMonthClasses}`}>
+    <div
+      className={`${baseClasses} ${todayClasses} ${selectedClasses} ${currentMonthClasses}`}
+    >
       {/* 日付表示 */}
       <div className={`text-sm font-medium mb-1 ${dateTextClasses}`}>
         {day.date.getDate()}
