@@ -17,11 +17,10 @@ export async function getWorkTimeTypes() {
     throw new Error("User not found");
   }
 
-  // WorkTimeTypeを取得（displayOrderでソート、isActiveなもののみ）
+  // WorkTimeTypeを取得（displayOrderでソート、isActiveに関係なくすべて取得）
   const workTimeTypes = await prisma.workTimeType.findMany({
     where: {
       userId: user.id,
-      isActive: true,
     },
     orderBy: {
       displayOrder: "asc",
@@ -33,6 +32,7 @@ export async function getWorkTimeTypes() {
       endTime: true,
       color: true,
       displayOrder: true,
+      isActive: true,
     },
   });
 

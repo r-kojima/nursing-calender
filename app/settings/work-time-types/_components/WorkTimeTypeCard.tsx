@@ -1,14 +1,21 @@
+"use client";
+
+import { useState } from "react";
 import type { WorkTimeType } from "@/app/components/calendar/types";
+import { ToggleSwitch } from "./ToggleSwitch";
 
 type WorkTimeTypeCardProps = {
   workTimeType: WorkTimeType;
   onEdit: (workTimeType: WorkTimeType) => void;
+  onToggle: () => void;
 };
 
 export function WorkTimeTypeCard({
   workTimeType,
   onEdit,
+  onToggle,
 }: WorkTimeTypeCardProps) {
+  const [isToggling, setIsToggling] = useState(false);
   const { name, startTime, endTime, color } = workTimeType;
   const bgColor = color || "#FF6B35";
 
@@ -23,8 +30,37 @@ export function WorkTimeTypeCard({
 
   const textColor = getTextColor(bgColor);
 
+  const handleToggle = async (enabled: boolean) => {
+    setIsToggling(true);
+    try {
+      const response = await fetch(
+        `/api/work-time-types/${workTimeType.id}/toggle`,
+        {
+          method: "PATCH",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to toggle work time type");
+      }
+
+      onToggle();
+    } catch (error) {
+      console.error("Error toggling work time type:", error);
+      alert("勤務時間の切り替えに失敗しました");
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  const isActive = workTimeType.isActive ?? true;
+
   return (
-    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
+    <div
+      className={`flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md transition-all ${
+        isActive ? "" : "opacity-50"
+      }`}
+    >
       <div className="flex items-center gap-4 flex-1">
         {/* 色プレビュー */}
         <div
@@ -36,21 +72,35 @@ export function WorkTimeTypeCard({
 
         {/* 勤務時間情報 */}
         <div className="flex-1">
-          <h3 className="font-semibold text-foreground">{name}</h3>
+          <h3 className="font-semibold text-foreground">
+            {name}
+            {!isActive && (
+              <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                (無効)
+              </span>
+            )}
+          </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {startTime} - {endTime}
           </p>
         </div>
       </div>
 
-      {/* 編集ボタン */}
-      <button
-        type="button"
-        onClick={() => onEdit(workTimeType)}
-        className="px-4 py-2 text-sm font-medium text-primary hover:text-primary-dark transition-colors"
-      >
-        編集
-      </button>
+      {/* トグルスイッチと編集ボタン */}
+      <div className="flex items-center gap-4">
+        <ToggleSwitch
+          enabled={isActive}
+          onChange={handleToggle}
+          disabled={isToggling}
+        />
+        <button
+          type="button"
+          onClick={() => onEdit(workTimeType)}
+          className="px-4 py-2 text-sm font-medium text-primary hover:text-primary-dark transition-colors"
+        >
+          編集
+        </button>
+      </div>
     </div>
   );
 }

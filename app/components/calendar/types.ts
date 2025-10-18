@@ -4,6 +4,7 @@ export type WorkTimeType = {
   startTime: string;
   endTime: string;
   color: string | null;
+  isActive?: boolean;
 };
 
 export type ShiftData = {

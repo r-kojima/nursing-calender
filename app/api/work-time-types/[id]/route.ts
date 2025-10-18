@@ -127,12 +127,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 論理削除（isActive を false に設定）
-    await prisma.workTimeType.update({
+    // 物理削除
+    await prisma.workTimeType.delete({
       where: { id },
-      data: {
-        isActive: false,
-      },
     });
 
     return NextResponse.json({ success: true });

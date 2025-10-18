@@ -33,6 +33,11 @@ export function WorkTimeTypeListClient({
     router.refresh();
   };
 
+  const handleToggle = () => {
+    // トグル後にページをリフレッシュして最新データを取得
+    router.refresh();
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingWorkTimeType(null);
@@ -96,6 +101,7 @@ export function WorkTimeTypeListClient({
                 key={workTimeType.id}
                 workTimeType={workTimeType}
                 onEdit={handleEdit}
+                onToggle={handleToggle}
               />
             ))}
           </div>
