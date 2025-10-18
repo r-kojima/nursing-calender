@@ -124,7 +124,9 @@ export function WorkTimeTypeModal({
     } catch (err) {
       console.error("Error saving work time type:", err);
       setError(
-        err instanceof Error ? err.message : "シフトパターンの保存に失敗しました",
+        err instanceof Error
+          ? err.message
+          : "シフトパターンの保存に失敗しました",
       );
     } finally {
       setIsSubmitting(false);
@@ -160,7 +162,9 @@ export function WorkTimeTypeModal({
     } catch (err) {
       console.error("Error deleting work time type:", err);
       setError(
-        err instanceof Error ? err.message : "シフトパターンの削除に失敗しました",
+        err instanceof Error
+          ? err.message
+          : "シフトパターンの削除に失敗しました",
       );
     } finally {
       setIsSubmitting(false);
