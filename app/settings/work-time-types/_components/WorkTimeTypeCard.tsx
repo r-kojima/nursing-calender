@@ -2,9 +2,13 @@ import type { WorkTimeType } from "@/app/components/calendar/types";
 
 type WorkTimeTypeCardProps = {
   workTimeType: WorkTimeType;
+  onEdit: (workTimeType: WorkTimeType) => void;
 };
 
-export function WorkTimeTypeCard({ workTimeType }: WorkTimeTypeCardProps) {
+export function WorkTimeTypeCard({
+  workTimeType,
+  onEdit,
+}: WorkTimeTypeCardProps) {
   const { name, startTime, endTime, color } = workTimeType;
   const bgColor = color || "#FF6B35";
 
@@ -39,12 +43,11 @@ export function WorkTimeTypeCard({ workTimeType }: WorkTimeTypeCardProps) {
         </div>
       </div>
 
-      {/* 編集ボタン（将来の実装用） */}
+      {/* 編集ボタン */}
       <button
         type="button"
+        onClick={() => onEdit(workTimeType)}
         className="px-4 py-2 text-sm font-medium text-primary hover:text-primary-dark transition-colors"
-        disabled
-        title="編集機能は未実装です"
       >
         編集
       </button>
