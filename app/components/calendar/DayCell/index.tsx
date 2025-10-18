@@ -65,31 +65,35 @@ export function DayCell({
     return (
       <button
         type="button"
-        className={`${baseClasses} ${todayClasses} ${selectedClasses} ${currentMonthClasses} ${clickableClasses} w-full text-left`}
+        className={`${baseClasses} ${todayClasses} ${selectedClasses} ${currentMonthClasses} ${clickableClasses} w-full text-left relative`}
         onClick={handleClick}
       >
         {/* 日付表示 */}
-        <div className={`text-sm font-medium mb-1 ${dateTextClasses}`}>
+        <div
+          className={`absolute top-1 left-2 text-sm font-medium ${dateTextClasses}`}
+        >
           {day.date.getDate()}
         </div>
 
         {/* シフトバッジまたはローディング */}
-        {renderShiftContent()}
+        <div className="mt-6">{renderShiftContent()}</div>
       </button>
     );
   }
 
   return (
     <div
-      className={`${baseClasses} ${todayClasses} ${selectedClasses} ${currentMonthClasses}`}
+      className={`${baseClasses} ${todayClasses} ${selectedClasses} ${currentMonthClasses} relative`}
     >
       {/* 日付表示 */}
-      <div className={`text-sm font-medium mb-1 ${dateTextClasses}`}>
+      <div
+        className={`absolute top-1 left-2 text-sm font-medium ${dateTextClasses}`}
+      >
         {day.date.getDate()}
       </div>
 
       {/* シフトバッジまたはローディング */}
-      {renderShiftContent()}
+      <div className="mt-6">{renderShiftContent()}</div>
     </div>
   );
 }
