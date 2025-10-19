@@ -53,7 +53,7 @@ export function WorkTimeTypeListClient({
               シフトパターンの設定
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              シフトで使用するシフトパターンを管理します
+              勤務時間のパターンを管理します
             </p>
           </div>
 

@@ -37,7 +37,7 @@ export function CalendarHeader({
                 : "text-primary border border-primary hover:bg-primary-pale"
             }`}
           >
-            {isShiftSetupMode ? "完了" : "シフト設定"}
+            {isShiftSetupMode ? "完了" : "シフト入力"}
           </button>
         )}
         {/* 今月ボタン */}
