@@ -22,6 +22,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // Googleカレンダー連携関連
+  googleAccessToken         String?   @db.Text
+  googleRefreshToken        String?   @db.Text
+  googleTokenExpiry         DateTime?
+  googleCalendarSyncEnabled Boolean   @default(false)
+  googleCalendarEmail       String?
+  googleCalendarLastSync    DateTime?
+
   members       Member[]       // このユーザーが管理するメンバー
   workTimeTypes WorkTimeType[] // このユーザーが登録したシフトパターンタイプ
   accounts      Account[]      // NextAuth用
@@ -61,19 +69,33 @@ model WorkTimeType {
 
 // シフト
 model Shift {
-  id             String        @id @default(cuid())
+  id             String     @id @default(cuid())
   memberId       String
-  workTimeTypeId String?       // nullの場合は休み
-  date           DateTime      @db.Date
-  note           String?       // メモ
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  workTimeTypeId String?    // nullの場合は休み
+  date           DateTime   @db.Date
+  note           String?    // メモ
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // Googleカレンダー連携関連
+  googleEventId  String?
+  lastSyncedAt   DateTime?
+  syncStatus     SyncStatus @default(PENDING)
 
   member       Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
   workTimeType WorkTimeType? @relation(fields: [workTimeTypeId], references: [id], onDelete: SetNull)
 
   @@unique([memberId, date]) // 1人1日1シフトのみ
   @@index([date]) // 日付での検索を高速化
+  @@index([syncStatus]) // 同期状態での検索を高速化
+  @@index([memberId, syncStatus]) // メンバー別の同期状態検索を高速化
+}
+
+enum SyncStatus {
+  PENDING // 同期待ち
+  SYNCED  // 同期済み
+  FAILED  // 同期失敗
+  DELETED // Googleカレンダーから削除済み
 }
 
 // NextAuth用のモデル

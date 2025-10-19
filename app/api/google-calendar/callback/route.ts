@@ -1,0 +1,118 @@
+import { auth } from "@/app/lib/auth";
+import { google } from "googleapis";
+import { NextResponse } from "next/server";
+import { prisma } from "@/app/lib/prisma";
+import { encrypt } from "@/app/lib/encryption";
+import { syncInitialShifts } from "@/app/lib/google-calendar/sync";
+
+export async function GET(request: Request) {
+  try {
+    // 1. 認証チェック
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.redirect(
+        new URL("/login?error=unauthorized", request.url),
+      );
+    }
+
+    // 2. クエリパラメータ取得
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
+    const error = searchParams.get("error");
+
+    // 3. ユーザーが拒否した場合
+    if (error === "access_denied") {
+      return NextResponse.redirect(
+        new URL("/settings/google-calendar?error=access_denied", request.url),
+      );
+    }
+
+    // 4. バリデーション
+    if (!code || !state) {
+      return NextResponse.redirect(
+        new URL(
+          "/settings/google-calendar?error=invalid_callback",
+          request.url,
+        ),
+      );
+    }
+
+    // 5. CSRF対策: stateの検証
+    const cookieHeader = request.headers.get("cookie") || "";
+    const cookies = cookieHeader.split(";").map((c) => c.trim());
+    const stateCookie = cookies.find((c) => c.startsWith("oauth_state="));
+    const savedState = stateCookie?.split("=")[1];
+
+    if (!savedState || savedState !== state) {
+      return NextResponse.redirect(
+        new URL("/settings/google-calendar?error=invalid_state", request.url),
+      );
+    }
+
+    // 6. OAuth2クライアント初期化
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI,
+    );
+
+    // 7. 認証コードをトークンに交換
+    const { tokens } = await oauth2Client.getToken(code);
+
+    if (!tokens.access_token || !tokens.refresh_token) {
+      throw new Error("Failed to obtain tokens");
+    }
+
+    // 8. Googleアカウント情報取得（メールアドレス）
+    oauth2Client.setCredentials(tokens);
+    const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+    const userInfo = await oauth2.userinfo.get();
+
+    // 9. ユーザー取得
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.redirect(
+        new URL("/settings/google-calendar?error=user_not_found", request.url),
+      );
+    }
+
+    // 10. トークンを暗号化してDBに保存
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        googleAccessToken: encrypt(tokens.access_token),
+        googleRefreshToken: encrypt(tokens.refresh_token),
+        googleTokenExpiry: tokens.expiry_date
+          ? new Date(tokens.expiry_date)
+          : new Date(Date.now() + 3600 * 1000), // デフォルト1時間
+        googleCalendarSyncEnabled: true,
+        googleCalendarEmail: userInfo.data.email || null,
+        googleCalendarLastSync: new Date(),
+      },
+    });
+
+    // 11. 既存シフトの初回同期（非同期実行）
+    syncInitialShifts(user.id).catch((error) => {
+      console.error("Initial sync failed:", error);
+    });
+
+    // 12. 成功リダイレクト
+    const response = NextResponse.redirect(
+      new URL("/settings/google-calendar?success=connected", request.url),
+    );
+
+    // 13. oauth_state cookieを削除
+    response.cookies.delete("oauth_state");
+
+    return response;
+  } catch (error) {
+    console.error("Error in OAuth callback:", error);
+    return NextResponse.redirect(
+      new URL("/settings/google-calendar?error=callback_failed", request.url),
+    );
+  }
+}
