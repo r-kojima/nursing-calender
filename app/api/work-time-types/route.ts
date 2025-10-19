@@ -19,11 +19,10 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // WorkTimeTypeを取得（displayOrderでソート、isActiveなもののみ）
+    // WorkTimeTypeを取得（displayOrderでソート）
     const workTimeTypes = await prisma.workTimeType.findMany({
       where: {
         userId: user.id,
-        isActive: true,
       },
       orderBy: {
         displayOrder: "asc",
@@ -35,6 +34,7 @@ export async function GET() {
         endTime: true,
         color: true,
         displayOrder: true,
+        isActive: true,
       },
     });
 

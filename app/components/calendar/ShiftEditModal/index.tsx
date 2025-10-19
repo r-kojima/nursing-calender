@@ -107,9 +107,9 @@ export function ShiftEditModal({
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <span className="block text-sm font-medium text-foreground mb-1">
               日付
-            </label>
+            </span>
             <div className="text-sm text-foreground/80">
               {date.toLocaleDateString("ja-JP", {
                 year: "numeric",

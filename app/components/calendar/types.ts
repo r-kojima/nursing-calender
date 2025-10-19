@@ -4,7 +4,7 @@ export type WorkTimeType = {
   startTime: string;
   endTime: string;
   color: string | null;
-  isActive?: boolean;
+  isActive: boolean;
 };
 
 export type Member = {

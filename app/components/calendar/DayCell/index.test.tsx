@@ -46,6 +46,7 @@ describe("DayCell", () => {
           startTime: "07:00",
           endTime: "16:00",
           color: "#FF6B35",
+          isActive: true,
         },
         member: {
           id: "self-member-1",
