@@ -15,13 +15,13 @@ export function ShiftBadge({
     // 休みの表示
     return (
       <div
-        className={`rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs relative ${className}`}
+        className={`rounded px-1.5 sm:px-2 py-1 sm:py-1 text-s relative ${className}`}
         style={{
           backgroundColor: "#e5e7eb",
           color: "#000",
         }}
       >
-        <div className="font-semibold truncate text-[10px] sm:text-xs">
+        <div className="font-semibold truncate text-[12px] sm:text-s">
           休み
         </div>
         {hasNote && (
@@ -36,13 +36,13 @@ export function ShiftBadge({
 
   return (
     <div
-      className={`rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs relative ${className}`}
+      className={`rounded px-1.5 sm:px-2 py-1 sm:py-1 text-s relative ${className}`}
       style={{
         backgroundColor: bgColor,
         color: "#000",
       }}
     >
-      <div className="font-semibold truncate text-[10px] sm:text-xs">
+      <div className="font-semibold truncate text-[12px] sm:text-s">
         {workTimeType.name}
       </div>
       {hasNote && (
