@@ -353,97 +353,95 @@ export function Calendar() {
           <div className="text-foreground/60">読み込み中...</div>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <div className="min-w-[700px]">
-            {/* 曜日ヘッダー */}
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
-                <div
-                  key={day}
-                  className={`text-center text-sm font-semibold py-2 ${
-                    i === 0
-                      ? "text-error"
-                      : i === 6
-                        ? "text-accent-blue"
-                        : "text-foreground"
-                  }`}
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-            {/* カレンダーグリッド */}
-            <div className="space-y-1">
-              {calendarWeeks.map((week) => (
-                <div
-                  key={week[0].date.toISOString()}
-                  className="grid grid-cols-7 gap-1"
-                >
-                  {week.map((day, dayIndex) => {
-                    const dateKey = day.date.toISOString().split("T")[0];
-                    return (
-                      <button
-                        type="button"
-                        key={dateKey}
-                        onClick={() => handleDayClick(day)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleDayClick(day);
-                          }
-                        }}
-                        className={`
-                          min-h-[100px] border rounded-lg p-2 cursor-pointer transition-all text-left
-                          ${day.isCurrentMonth ? "bg-background hover:bg-primary/5" : "bg-foreground/5"}
-                          ${day.isToday ? "ring-2 ring-primary" : "border-foreground/20"}
-                          ${day.isSelected ? "bg-primary-pale ring-2 ring-primary" : ""}
-                          ${isShiftSetupMode && day.isCurrentMonth ? "hover:ring-2 hover:ring-primary/50" : ""}
-                        `}
+        <div>
+          {/* 曜日ヘッダー */}
+          <div className="grid grid-cols-7 gap-0.5 mb-0.5">
+            {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
+              <div
+                key={day}
+                className={`text-center text-xs sm:text-sm font-semibold py-1 ${
+                  i === 0
+                    ? "text-error"
+                    : i === 6
+                      ? "text-accent-blue"
+                      : "text-foreground"
+                }`}
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+          {/* カレンダーグリッド */}
+          <div className="space-y-0.5">
+            {calendarWeeks.map((week) => (
+              <div
+                key={week[0].date.toISOString()}
+                className="grid grid-cols-7 gap-0.5"
+              >
+                {week.map((day, dayIndex) => {
+                  const dateKey = day.date.toISOString().split("T")[0];
+                  return (
+                    <button
+                      type="button"
+                      key={dateKey}
+                      onClick={() => handleDayClick(day)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleDayClick(day);
+                        }
+                      }}
+                      className={`
+                        aspect-square sm:min-h-[100px] border rounded p-1 sm:p-2 cursor-pointer transition-all flex flex-col
+                        ${day.isCurrentMonth ? "bg-background hover:bg-primary/5" : "bg-foreground/5"}
+                        ${day.isToday ? "ring-2 ring-primary" : "border-foreground/20"}
+                        ${day.isSelected ? "bg-primary-pale ring-2 ring-primary" : ""}
+                        ${isShiftSetupMode && day.isCurrentMonth ? "hover:ring-2 hover:ring-primary/50" : ""}
+                      `}
+                    >
+                      {/* 日付（左上固定） */}
+                      <div
+                        className={`text-xs sm:text-sm font-semibold mb-0.5 sm:mb-1 self-start ${
+                          day.isCurrentMonth
+                            ? dayIndex === 0
+                              ? "text-error"
+                              : dayIndex === 6
+                                ? "text-accent-blue"
+                                : "text-foreground"
+                            : "text-foreground/40"
+                        }`}
                       >
-                        {/* 日付（左上） */}
+                        {day.day}
+                      </div>
+                      {/* シフト情報 */}
+                      {day.shift && day.isCurrentMonth && (
                         <div
-                          className={`text-sm font-semibold mb-1 ${
-                            day.isCurrentMonth
-                              ? dayIndex === 0
-                                ? "text-error"
-                                : dayIndex === 6
-                                  ? "text-accent-blue"
-                                  : "text-foreground"
-                              : "text-foreground/40"
-                          }`}
+                          className="rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs relative w-full"
+                          style={{
+                            backgroundColor:
+                              day.shift.workTimeType?.color || "#e5e7eb",
+                            color: "#000",
+                          }}
                         >
-                          {day.day}
-                        </div>
-                        {/* シフト情報 */}
-                        {day.shift && day.isCurrentMonth && (
-                          <div
-                            className="rounded px-2 py-1 text-xs relative"
-                            style={{
-                              backgroundColor:
-                                day.shift.workTimeType?.color || "#e5e7eb",
-                              color: "#000",
-                            }}
-                          >
-                            <div className="font-semibold truncate">
-                              {day.shift.workTimeType?.name || "休み"}
-                            </div>
-                            {day.shift.workTimeType && (
-                              <div className="text-xs opacity-80">
-                                {day.shift.workTimeType.startTime}-
-                                {day.shift.workTimeType.endTime}
-                              </div>
-                            )}
-                            {day.shift.note && (
-                              <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-black rounded-full" />
-                            )}
+                          <div className="font-semibold truncate text-[10px] sm:text-xs">
+                            {day.shift.workTimeType?.name || "休み"}
                           </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+                          {day.shift.workTimeType && (
+                            <div className="text-[9px] sm:text-xs opacity-80 truncate">
+                              {day.shift.workTimeType.startTime}-
+                              {day.shift.workTimeType.endTime}
+                            </div>
+                          )}
+                          {day.shift.note && (
+                            <div className="absolute top-0.5 right-0.5 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-black rounded-full" />
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
       )}
