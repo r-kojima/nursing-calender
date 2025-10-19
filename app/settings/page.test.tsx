@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import { redirect } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "../lib/auth";
-import { redirect } from "next/navigation";
 import SettingsPage from "./page";
 
 // Next.jsのモジュールをモック
@@ -37,7 +37,7 @@ describe("SettingsPage", () => {
           email: "test@example.com",
         },
         expires: "2024-12-31",
-      });
+      } as any);
 
       const result = await SettingsPage();
       render(result);
@@ -56,7 +56,7 @@ describe("SettingsPage", () => {
           email: "test@example.com",
         },
         expires: "2024-12-31",
-      });
+      } as any);
     });
 
     it("ページタイトルと説明が表示される", async () => {
@@ -95,12 +95,22 @@ describe("SettingsPage", () => {
       expect(settingCard).toHaveAttribute("href", "/settings/work-time-types");
     });
 
-    it("将来の拡張用プレースホルダーが表示される", async () => {
+    it("Googleカレンダー連携カードが表示される", async () => {
       const result = await SettingsPage();
       render(result);
 
-      expect(screen.getByText("その他の設定")).toBeInTheDocument();
-      expect(screen.getByText("今後追加予定")).toBeInTheDocument();
+      expect(screen.getByText("Googleカレンダー連携")).toBeInTheDocument();
+      expect(
+        screen.getByText(/自分のシフトをGoogleカレンダーに自動同期できます/),
+      ).toBeInTheDocument();
+    });
+
+    it("Googleカレンダー連携カードに正しいリンクが設定されている", async () => {
+      const result = await SettingsPage();
+      render(result);
+
+      const settingCard = screen.getByText("Googleカレンダー連携").closest("a");
+      expect(settingCard).toHaveAttribute("href", "/settings/google-calendar");
     });
   });
 
@@ -113,7 +123,7 @@ describe("SettingsPage", () => {
           email: "test@example.com",
         },
         expires: "2024-12-31",
-      });
+      } as any);
     });
 
     it("すべてのアイコンにtitleが設定されている", async () => {
@@ -124,7 +134,7 @@ describe("SettingsPage", () => {
       expect(titles.length).toBeGreaterThan(0);
       expect(titles[0]).toHaveTextContent("Back arrow");
       expect(titles[1]).toHaveTextContent("Clock icon");
-      expect(titles[2]).toHaveTextContent("Coming soon icon");
+      expect(titles[2]).toHaveTextContent("Calendar icon");
     });
   });
 });
