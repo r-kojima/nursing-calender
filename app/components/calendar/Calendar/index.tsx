@@ -426,12 +426,6 @@ export function Calendar() {
                           <div className="font-semibold truncate text-[10px] sm:text-xs">
                             {day.shift.workTimeType?.name || "休み"}
                           </div>
-                          {day.shift.workTimeType && (
-                            <div className="text-[9px] sm:text-xs opacity-80 truncate">
-                              {day.shift.workTimeType.startTime}-
-                              {day.shift.workTimeType.endTime}
-                            </div>
-                          )}
                           {day.shift.note && (
                             <div className="absolute top-0.5 right-0.5 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-black rounded-full" />
                           )}
@@ -472,10 +466,7 @@ export function Calendar() {
                     color: "#000",
                   }}
                 >
-                  <div className="font-semibold">{wtt.name}</div>
-                  <div className="text-xs opacity-80">
-                    {wtt.startTime}-{wtt.endTime}
-                  </div>
+                  {wtt.name}
                 </button>
               ))}
           </div>
