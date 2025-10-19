@@ -16,7 +16,7 @@ vi.mock("next/server", () => ({
 }));
 
 // Mock Prisma
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/app/lib/prisma", () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),

@@ -11,12 +11,9 @@ vi.mock("@/app/lib/prisma", () => ({
       findUnique: vi.fn(),
     },
     member: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     shift: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
       upsert: vi.fn(),
     },
   },
@@ -33,7 +30,6 @@ describe("PUT /api/shifts/upsert", () => {
     const request = new Request("http://localhost:3000/api/shifts/upsert", {
       method: "PUT",
       body: JSON.stringify({
-        memberId: "member-1",
         date: "2024-05-01",
         workTimeTypeId: "wtt-1",
       }),
@@ -45,7 +41,7 @@ describe("PUT /api/shifts/upsert", () => {
     expect(data.error).toBe("Unauthorized");
   });
 
-  it("memberIdまたはdateが欠けている場合は400を返す", async () => {
+  it("dateが欠けている場合は400を返す", async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },
     } as any);
@@ -53,15 +49,15 @@ describe("PUT /api/shifts/upsert", () => {
     const request = new Request("http://localhost:3000/api/shifts/upsert", {
       method: "PUT",
       body: JSON.stringify({
-        memberId: "member-1",
         // dateがない
+        workTimeTypeId: "wtt-1",
       }),
     });
     const response = await PUT(request);
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("memberId and date are required");
+    expect(data.error).toBe("date is required");
   });
 
   it("ユーザーが見つからない場合は404を返す", async () => {
@@ -73,7 +69,6 @@ describe("PUT /api/shifts/upsert", () => {
     const request = new Request("http://localhost:3000/api/shifts/upsert", {
       method: "PUT",
       body: JSON.stringify({
-        memberId: "member-1",
         date: "2024-05-01",
         workTimeTypeId: "wtt-1",
       }),
@@ -85,7 +80,7 @@ describe("PUT /api/shifts/upsert", () => {
     expect(data.error).toBe("User not found");
   });
 
-  it("他のユーザーのメンバーへのシフト設定は403を返す", async () => {
+  it("自分メンバーが見つからない場合は404を返す", async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },
     } as any);
@@ -99,30 +94,20 @@ describe("PUT /api/shifts/upsert", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    // 別のユーザーのメンバー
-    vi.mocked(prisma.member.findUnique).mockResolvedValue({
-      id: "member-1",
-      userId: "other-user-id",
-      name: "Other Member",
-      isSelf: false,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    vi.mocked(prisma.member.findFirst).mockResolvedValue(null);
 
     const request = new Request("http://localhost:3000/api/shifts/upsert", {
       method: "PUT",
       body: JSON.stringify({
-        memberId: "member-1",
         date: "2024-05-01",
         workTimeTypeId: "wtt-1",
       }),
     });
     const response = await PUT(request);
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(404);
     const data = await response.json();
-    expect(data.error).toBe("Forbidden");
+    expect(data.error).toBe("Self member not found");
   });
 
   it("新規シフトを作成する（INSERT）", async () => {
@@ -139,10 +124,10 @@ describe("PUT /api/shifts/upsert", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    vi.mocked(prisma.member.findUnique).mockResolvedValue({
-      id: "member-1",
+    vi.mocked(prisma.member.findFirst).mockResolvedValue({
+      id: "self-member-1",
       userId: "user-1",
-      name: "Test Member",
+      name: "Test User",
       isSelf: true,
       isActive: true,
       createdAt: new Date(),
@@ -150,7 +135,7 @@ describe("PUT /api/shifts/upsert", () => {
     });
     const createdShift = {
       id: "shift-1",
-      memberId: "member-1",
+      memberId: "self-member-1",
       workTimeTypeId: "wtt-1",
       date: new Date("2024-05-01"),
       note: "午後から研修",
@@ -162,7 +147,6 @@ describe("PUT /api/shifts/upsert", () => {
     const request = new Request("http://localhost:3000/api/shifts/upsert", {
       method: "PUT",
       body: JSON.stringify({
-        memberId: "member-1",
         date: "2024-05-01",
         workTimeTypeId: "wtt-1",
         note: "午後から研修",
@@ -173,7 +157,7 @@ describe("PUT /api/shifts/upsert", () => {
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.shift.id).toBe("shift-1");
-    expect(data.shift.memberId).toBe("member-1");
+    expect(data.shift.memberId).toBe("self-member-1");
     expect(data.shift.note).toBe("午後から研修");
   });
 
@@ -191,10 +175,10 @@ describe("PUT /api/shifts/upsert", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    vi.mocked(prisma.member.findUnique).mockResolvedValue({
-      id: "member-1",
+    vi.mocked(prisma.member.findFirst).mockResolvedValue({
+      id: "self-member-1",
       userId: "user-1",
-      name: "Test Member",
+      name: "Test User",
       isSelf: true,
       isActive: true,
       createdAt: new Date(),
@@ -202,7 +186,7 @@ describe("PUT /api/shifts/upsert", () => {
     });
     const updatedShift = {
       id: "shift-1",
-      memberId: "member-1",
+      memberId: "self-member-1",
       workTimeTypeId: "wtt-2",
       date: new Date("2024-05-01"),
       note: "更新されたメモ",
@@ -214,7 +198,6 @@ describe("PUT /api/shifts/upsert", () => {
     const request = new Request("http://localhost:3000/api/shifts/upsert", {
       method: "PUT",
       body: JSON.stringify({
-        memberId: "member-1",
         date: "2024-05-01",
         workTimeTypeId: "wtt-2",
         note: "更新されたメモ",
@@ -224,6 +207,7 @@ describe("PUT /api/shifts/upsert", () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    expect(data.shift.id).toBe("shift-1");
     expect(data.shift.workTimeTypeId).toBe("wtt-2");
     expect(data.shift.note).toBe("更新されたメモ");
   });
@@ -242,10 +226,10 @@ describe("PUT /api/shifts/upsert", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    vi.mocked(prisma.member.findUnique).mockResolvedValue({
-      id: "member-1",
+    vi.mocked(prisma.member.findFirst).mockResolvedValue({
+      id: "self-member-1",
       userId: "user-1",
-      name: "Test Member",
+      name: "Test User",
       isSelf: true,
       isActive: true,
       createdAt: new Date(),
@@ -253,10 +237,10 @@ describe("PUT /api/shifts/upsert", () => {
     });
     const updatedShift = {
       id: "shift-1",
-      memberId: "member-1",
+      memberId: "self-member-1",
       workTimeTypeId: "wtt-2",
       date: new Date("2024-05-01"),
-      note: "既存のメモ", // 既存値を保持
+      note: "既存のメモ",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -265,7 +249,6 @@ describe("PUT /api/shifts/upsert", () => {
     const request = new Request("http://localhost:3000/api/shifts/upsert", {
       method: "PUT",
       body: JSON.stringify({
-        memberId: "member-1",
         date: "2024-05-01",
         workTimeTypeId: "wtt-2",
         // noteは省略
@@ -274,10 +257,11 @@ describe("PUT /api/shifts/upsert", () => {
     const response = await PUT(request);
 
     expect(response.status).toBe(200);
-    // upsertが既存のnoteを保持するように呼ばれていることを確認
-    // updateオブジェクトにnoteフィールドが含まれていないことを確認
+
+    // upsertが呼ばれた際の引数を確認
     const upsertCall = vi.mocked(prisma.shift.upsert).mock.calls[0][0];
-    expect(upsertCall.update).not.toHaveProperty("note");
+    expect(upsertCall.update.workTimeTypeId).toBe("wtt-2");
+    expect(upsertCall.update.note).toBeUndefined(); // noteは更新対象外
   });
 
   it("workTimeTypeId=nullで休みを設定できる", async () => {
@@ -294,10 +278,10 @@ describe("PUT /api/shifts/upsert", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    vi.mocked(prisma.member.findUnique).mockResolvedValue({
-      id: "member-1",
+    vi.mocked(prisma.member.findFirst).mockResolvedValue({
+      id: "self-member-1",
       userId: "user-1",
-      name: "Test Member",
+      name: "Test User",
       isSelf: true,
       isActive: true,
       createdAt: new Date(),
@@ -305,7 +289,7 @@ describe("PUT /api/shifts/upsert", () => {
     });
     const createdShift = {
       id: "shift-1",
-      memberId: "member-1",
+      memberId: "self-member-1",
       workTimeTypeId: null,
       date: new Date("2024-05-01"),
       note: null,
@@ -317,7 +301,6 @@ describe("PUT /api/shifts/upsert", () => {
     const request = new Request("http://localhost:3000/api/shifts/upsert", {
       method: "PUT",
       body: JSON.stringify({
-        memberId: "member-1",
         date: "2024-05-01",
         workTimeTypeId: null,
       }),
