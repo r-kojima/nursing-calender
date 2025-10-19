@@ -5,7 +5,7 @@ import Link from "next/link";
 export function SettingsButton() {
   return (
     <Link
-      href="/settings/work-time-types"
+      href="/settings"
       className="fixed bottom-8 right-8 z-40 p-4 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 group"
       aria-label="設定"
     >
