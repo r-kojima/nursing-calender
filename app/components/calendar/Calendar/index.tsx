@@ -2,17 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { CalendarHeader } from "../CalendarHeader";
+import { DayCell } from "../DayCell";
 import { ShiftEditModal } from "../ShiftEditModal";
-import type { ShiftData, WorkTimeType } from "../types";
-
-type CalendarDay = {
-  date: Date;
-  day: number;
-  isCurrentMonth: boolean;
-  isToday: boolean;
-  isSelected: boolean;
-  shift: ShiftData | null;
-};
+import type { CalendarDay, ShiftData, WorkTimeType } from "../types";
 
 type CalendarWeek = CalendarDay[];
 
@@ -381,57 +373,13 @@ export function Calendar() {
                 {week.map((day, dayIndex) => {
                   const dateKey = day.date.toISOString().split("T")[0];
                   return (
-                    <button
-                      type="button"
+                    <DayCell
                       key={dateKey}
-                      onClick={() => handleDayClick(day)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          handleDayClick(day);
-                        }
-                      }}
-                      className={`
-                        min-h-[80px] sm:min-h-[120px] border rounded p-1 sm:p-2 cursor-pointer transition-all flex flex-col
-                        ${day.isCurrentMonth ? "bg-background hover:bg-primary/5" : "bg-foreground/5"}
-                        ${day.isToday ? "ring-2 ring-primary" : "border-foreground/20"}
-                        ${day.isSelected ? "bg-primary-pale ring-2 ring-primary" : ""}
-                        ${isShiftSetupMode && day.isCurrentMonth ? "hover:ring-2 hover:ring-primary/50" : ""}
-                      `}
-                    >
-                      {/* 日付（左上固定） */}
-                      <div
-                        className={`text-xs sm:text-sm font-semibold mb-0.5 sm:mb-1 self-start ${
-                          day.isCurrentMonth
-                            ? dayIndex === 0
-                              ? "text-error"
-                              : dayIndex === 6
-                                ? "text-accent-blue"
-                                : "text-foreground"
-                            : "text-foreground/40"
-                        }`}
-                      >
-                        {day.day}
-                      </div>
-                      {/* シフト情報 */}
-                      {day.shift && day.isCurrentMonth && (
-                        <div
-                          className="rounded px-1 sm:px-2 py-0.5 sm:py-1 text-xs relative w-full"
-                          style={{
-                            backgroundColor:
-                              day.shift.workTimeType?.color || "#e5e7eb",
-                            color: "#000",
-                          }}
-                        >
-                          <div className="font-semibold truncate text-[10px] sm:text-xs">
-                            {day.shift.workTimeType?.name || "休み"}
-                          </div>
-                          {day.shift.note && (
-                            <div className="absolute top-0.5 right-0.5 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-black rounded-full" />
-                          )}
-                        </div>
-                      )}
-                    </button>
+                      day={day}
+                      dayIndex={dayIndex}
+                      onClick={handleDayClick}
+                      isShiftSetupMode={isShiftSetupMode}
+                    />
                   );
                 })}
               </div>

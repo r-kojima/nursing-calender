@@ -3,97 +3,65 @@ import type { CalendarDay } from "../types";
 
 type DayCellProps = {
   day: CalendarDay;
-  onClick?: (date: Date) => void;
-  isSelected?: boolean;
-  isLoading?: boolean;
+  dayIndex: number;
+  onClick: (day: CalendarDay) => void;
+  isShiftSetupMode?: boolean;
 };
 
 export function DayCell({
   day,
+  dayIndex,
   onClick,
-  isSelected = false,
-  isLoading = false,
+  isShiftSetupMode = false,
 }: DayCellProps) {
   const handleClick = () => {
-    if (onClick) {
-      onClick(day.date);
-    }
+    onClick(day);
   };
 
-  const baseClasses =
-    "min-h-20 p-2 border border-gray-200 dark:border-gray-700";
-  const todayClasses = day.isToday
-    ? "border-2 border-primary dark:border-primary"
-    : "";
-  const selectedClasses = isSelected
-    ? "bg-primary-pale dark:bg-primary-dark/20"
-    : "";
-  const currentMonthClasses =
-    day.isCurrentMonth && !isSelected
-      ? "bg-white dark:bg-gray-800"
-      : !isSelected
-        ? "bg-gray-50 dark:bg-gray-900"
-        : "";
-  const clickableClasses = onClick
-    ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-    : "";
-
-  const dateTextClasses = day.isCurrentMonth
-    ? "text-foreground"
-    : "text-gray-400 dark:text-gray-600";
-
-  // シフト情報の表示内容を決定
-  const renderShiftContent = () => {
-    if (isLoading && day.isCurrentMonth) {
-      // ローディング中は当月のセルにスケルトンを表示
-      return (
-        <div className="w-full h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-      );
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick(day);
     }
-    if (day.shift) {
-      return (
-        <ShiftBadge
-          workTimeType={day.shift.workTimeType}
-          className="w-full text-center"
-        />
-      );
-    }
-    return null;
   };
-
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        className={`${baseClasses} ${todayClasses} ${selectedClasses} ${currentMonthClasses} ${clickableClasses} w-full text-left relative`}
-        onClick={handleClick}
-      >
-        {/* 日付表示 */}
-        <div
-          className={`absolute top-1 left-2 text-sm font-medium ${dateTextClasses}`}
-        >
-          {day.date.getDate()}
-        </div>
-
-        {/* シフトバッジまたはローディング */}
-        <div className="mt-6">{renderShiftContent()}</div>
-      </button>
-    );
-  }
 
   return (
-    <div
-      className={`${baseClasses} ${todayClasses} ${selectedClasses} ${currentMonthClasses} relative`}
+    <button
+      type="button"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={`
+        min-h-[80px] sm:min-h-[120px] border rounded p-1 sm:p-2 cursor-pointer transition-all flex flex-col
+        ${day.isCurrentMonth ? "bg-background hover:bg-primary/5" : "bg-foreground/5"}
+        ${day.isToday ? "ring-2 ring-primary" : "border-foreground/20"}
+        ${day.isSelected ? "bg-primary-pale ring-2 ring-primary" : ""}
+        ${isShiftSetupMode && day.isCurrentMonth ? "hover:ring-2 hover:ring-primary/50" : ""}
+      `}
     >
-      {/* 日付表示 */}
+      {/* 日付（左上固定） */}
       <div
-        className={`absolute top-1 left-2 text-sm font-medium ${dateTextClasses}`}
+        className={`text-xs sm:text-sm font-semibold mb-0.5 sm:mb-1 self-start ${
+          day.isCurrentMonth
+            ? dayIndex === 0
+              ? "text-error"
+              : dayIndex === 6
+                ? "text-accent-blue"
+                : "text-foreground"
+            : "text-foreground/40"
+        }`}
       >
-        {day.date.getDate()}
+        {day.day}
       </div>
-
-      {/* シフトバッジまたはローディング */}
-      <div className="mt-6">{renderShiftContent()}</div>
-    </div>
+      {/* シフト情報 */}
+      {day.shift && day.isCurrentMonth && (
+        <div className="mt-auto w-full px-1 pb-1">
+          <ShiftBadge
+            workTimeType={day.shift.workTimeType}
+            hasNote={!!day.shift.note}
+            className="w-full"
+          />
+        </div>
+      )}
+    </button>
   );
 }

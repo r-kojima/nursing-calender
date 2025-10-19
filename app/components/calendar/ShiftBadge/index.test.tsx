@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { ShiftBadge } from ".";
 
 describe("ShiftBadge", () => {
-  it("休みの場合は「休」と表示される", () => {
+  it("休みの場合は「休み」と表示される", () => {
     render(<ShiftBadge workTimeType={null} />);
-    expect(screen.getByText("休")).toBeInTheDocument();
+    expect(screen.getByText("休み")).toBeInTheDocument();
   });
 
   it("WorkTimeTypeが指定されている場合は名前が表示される", () => {
@@ -15,6 +15,7 @@ describe("ShiftBadge", () => {
       startTime: "07:00",
       endTime: "16:00",
       color: "#FF6B35",
+      isActive: true,
     };
 
     render(<ShiftBadge workTimeType={workTimeType} />);
@@ -28,10 +29,11 @@ describe("ShiftBadge", () => {
       startTime: "07:00",
       endTime: "16:00",
       color: "#FF6B35",
+      isActive: true,
     };
 
-    render(<ShiftBadge workTimeType={workTimeType} />);
-    const badge = screen.getByText("早番");
+    const { container } = render(<ShiftBadge workTimeType={workTimeType} />);
+    const badge = container.firstChild as HTMLElement;
     expect(badge).toHaveStyle({ backgroundColor: "#FF6B35" });
   });
 
@@ -42,39 +44,27 @@ describe("ShiftBadge", () => {
       startTime: "07:00",
       endTime: "16:00",
       color: null,
+      isActive: true,
     };
 
-    render(<ShiftBadge workTimeType={workTimeType} />);
-    const badge = screen.getByText("早番");
-    expect(badge).toHaveStyle({ backgroundColor: "#FF6B35" });
+    const { container } = render(<ShiftBadge workTimeType={workTimeType} />);
+    const badge = container.firstChild as HTMLElement;
+    expect(badge).toHaveStyle({ backgroundColor: "#e5e7eb" });
   });
 
-  it("明るい背景色の場合は黒いテキストが表示される", () => {
+  it("常に黒いテキストが表示される", () => {
     const workTimeType = {
       id: "1",
-      name: "遅番",
-      startTime: "10:00",
-      endTime: "19:00",
-      color: "#FFFF00", // 黄色（明るい）
+      name: "早番",
+      startTime: "07:00",
+      endTime: "16:00",
+      color: "#FF6B35",
+      isActive: true,
     };
 
-    render(<ShiftBadge workTimeType={workTimeType} />);
-    const badge = screen.getByText("遅番");
-    expect(badge).toHaveStyle({ color: "#000000" });
-  });
-
-  it("暗い背景色の場合は白いテキストが表示される", () => {
-    const workTimeType = {
-      id: "1",
-      name: "夜勤",
-      startTime: "22:00",
-      endTime: "07:00",
-      color: "#000080", // ネイビー（暗い）
-    };
-
-    render(<ShiftBadge workTimeType={workTimeType} />);
-    const badge = screen.getByText("夜勤");
-    expect(badge).toHaveStyle({ color: "#FFFFFF" });
+    const { container } = render(<ShiftBadge workTimeType={workTimeType} />);
+    const badge = container.firstChild as HTMLElement;
+    expect(badge).toHaveStyle({ color: "#000" });
   });
 
   it("classNameが渡された場合は適用される", () => {
@@ -84,10 +74,69 @@ describe("ShiftBadge", () => {
       startTime: "07:00",
       endTime: "16:00",
       color: "#FF6B35",
+      isActive: true,
     };
 
-    render(<ShiftBadge workTimeType={workTimeType} className="custom-class" />);
-    const badge = screen.getByText("早番");
+    const { container } = render(
+      <ShiftBadge workTimeType={workTimeType} className="custom-class" />,
+    );
+    const badge = container.firstChild as HTMLElement;
     expect(badge).toHaveClass("custom-class");
+  });
+
+  it("hasNoteがtrueの場合はメモインジケーターが表示される", () => {
+    const workTimeType = {
+      id: "1",
+      name: "早番",
+      startTime: "07:00",
+      endTime: "16:00",
+      color: "#FF6B35",
+      isActive: true,
+    };
+
+    const { container } = render(
+      <ShiftBadge workTimeType={workTimeType} hasNote />,
+    );
+    const indicator = container.querySelector(".bg-black.rounded-full");
+    expect(indicator).toBeInTheDocument();
+  });
+
+  it("hasNoteがfalseの場合はメモインジケーターが表示されない", () => {
+    const workTimeType = {
+      id: "1",
+      name: "早番",
+      startTime: "07:00",
+      endTime: "16:00",
+      color: "#FF6B35",
+      isActive: true,
+    };
+
+    const { container } = render(
+      <ShiftBadge workTimeType={workTimeType} hasNote={false} />,
+    );
+    const indicator = container.querySelector(".bg-black.rounded-full");
+    expect(indicator).not.toBeInTheDocument();
+  });
+
+  it("休みの場合でもhasNoteがtrueならメモインジケーターが表示される", () => {
+    const { container } = render(<ShiftBadge workTimeType={null} hasNote />);
+    const indicator = container.querySelector(".bg-black.rounded-full");
+    expect(indicator).toBeInTheDocument();
+  });
+
+  it("レスポンシブクラスが適用されている", () => {
+    const workTimeType = {
+      id: "1",
+      name: "早番",
+      startTime: "07:00",
+      endTime: "16:00",
+      color: "#FF6B35",
+      isActive: true,
+    };
+
+    const { container } = render(<ShiftBadge workTimeType={workTimeType} />);
+    const badge = container.firstChild as HTMLElement;
+    expect(badge).toHaveClass("sm:px-2");
+    expect(badge).toHaveClass("sm:py-1");
   });
 });
