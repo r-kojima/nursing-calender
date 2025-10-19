@@ -85,6 +85,13 @@ export async function GET(request: Request) {
             color: true,
           },
         },
+        member: {
+          select: {
+            id: true,
+            name: true,
+            isSelf: true,
+          },
+        },
       },
       orderBy: {
         date: "asc",
@@ -95,9 +102,11 @@ export async function GET(request: Request) {
     const response = {
       shifts: shifts.map((shift) => ({
         id: shift.id,
-        date: shift.date.toISOString(),
+        memberId: shift.memberId,
+        date: shift.date.toISOString().split("T")[0],
         note: shift.note,
         workTimeType: shift.workTimeType,
+        member: shift.member,
       })),
     };
 
