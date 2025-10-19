@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Member, WorkTimeType } from "../types";
+import type { WorkTimeType } from "../types";
 
 type ShiftEditModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  member: Member | null;
   date: Date | null;
   initialShift: {
     id: string;
@@ -15,7 +14,6 @@ type ShiftEditModalProps = {
   } | null;
   workTimeTypes: WorkTimeType[];
   onSave: (data: {
-    memberId: string;
     date: string;
     workTimeTypeId: string | null;
     note: string;
@@ -26,7 +24,6 @@ type ShiftEditModalProps = {
 export function ShiftEditModal({
   isOpen,
   onClose,
-  member,
   date,
   initialShift,
   workTimeTypes,
@@ -52,12 +49,11 @@ export function ShiftEditModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!member || !date) return;
+    if (!date) return;
 
     setIsSubmitting(true);
     try {
       await onSave({
-        memberId: member.id,
         date: date.toISOString().split("T")[0],
         workTimeTypeId,
         note,
@@ -90,7 +86,7 @@ export function ShiftEditModal({
     }
   };
 
-  if (!isOpen || !member || !date) return null;
+  if (!isOpen || !date) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -110,13 +106,6 @@ export function ShiftEditModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              メンバー
-            </label>
-            <div className="text-sm text-foreground/80">{member.name}</div>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
               日付

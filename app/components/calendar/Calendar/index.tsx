@@ -3,7 +3,18 @@
 import { useEffect, useState } from "react";
 import { CalendarHeader } from "../CalendarHeader";
 import { ShiftEditModal } from "../ShiftEditModal";
-import type { Member, MemberRow, ShiftData, WorkTimeType } from "../types";
+import type { ShiftData, WorkTimeType } from "../types";
+
+type CalendarDay = {
+  date: Date;
+  day: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isSelected: boolean;
+  shift: ShiftData | null;
+};
+
+type CalendarWeek = CalendarDay[];
 
 export function Calendar() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
@@ -13,16 +24,13 @@ export function Calendar() {
     today.setHours(0, 0, 0, 0);
     return today;
   });
-  const [members, setMembers] = useState<Member[]>([]);
   const [shifts, setShifts] = useState<ShiftData[]>([]);
   const [workTimeTypes, setWorkTimeTypes] = useState<WorkTimeType[]>([]);
   const [shiftsLoading, setShiftsLoading] = useState<boolean>(true);
-  const [membersLoading, setMembersLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // モーダル関連の状態
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [editingDate, setEditingDate] = useState<Date | null>(null);
   const [editingShift, setEditingShift] = useState<{
     id: string;
@@ -32,65 +40,85 @@ export function Calendar() {
 
   // シフト設定モード
   const [isShiftSetupMode, setIsShiftSetupMode] = useState(false);
-  const [selectedMemberForSetup, setSelectedMemberForSetup] =
-    useState<Member | null>(null);
 
-  // メンバーごとのカレンダーデータを生成
-  const generateMemberRows = (): MemberRow[] => {
-    const daysInMonth = new Date(year, month, 0).getDate();
+  // 月のカレンダーグリッドを生成（週ごと）
+  const generateCalendarWeeks = (): CalendarWeek[] => {
+    const firstDayOfMonth = new Date(year, month - 1, 1);
+    const lastDayOfMonth = new Date(year, month, 0);
+    const daysInMonth = lastDayOfMonth.getDate();
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    return members.map((member) => {
-      const days = [];
+    const weeks: CalendarWeek[] = [];
+    let currentWeek: CalendarDay[] = [];
 
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month - 1, day);
-        const dateStr = date.toISOString().split("T")[0];
-        const shift =
-          shifts.find((s) => s.memberId === member.id && s.date === dateStr) ||
-          null;
+    // 月初の曜日（0=日曜日）
+    const firstDayOfWeek = firstDayOfMonth.getDay();
 
-        days.push({
+    // 前月の日付で埋める
+    if (firstDayOfWeek > 0) {
+      const prevMonthLastDay = new Date(year, month - 1, 0).getDate();
+      for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+        const day = prevMonthLastDay - i;
+        const date = new Date(year, month - 2, day);
+        currentWeek.push({
           date,
-          isCurrentMonth: true,
-          isToday: date.getTime() === today.getTime(),
-          shift,
+          day,
+          isCurrentMonth: false,
+          isToday: false,
+          isSelected: false,
+          shift: null,
         });
       }
+    }
 
-      return {
-        member,
-        days,
-      };
-    });
-  };
+    // 当月の日付
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dateStr = date.toISOString().split("T")[0];
+      const shift = shifts.find((s) => s.date === dateStr) || null;
+      const isToday = date.getTime() === today.getTime();
+      const isSelected =
+        isShiftSetupMode &&
+        date.getTime() === selectedDate.getTime() &&
+        date.getMonth() === selectedDate.getMonth();
 
-  // メンバー一覧を取得
-  useEffect(() => {
-    const fetchMembers = async () => {
-      setMembersLoading(true);
-      setError(null);
+      currentWeek.push({
+        date,
+        day,
+        isCurrentMonth: true,
+        isToday,
+        isSelected,
+        shift,
+      });
 
-      try {
-        const response = await fetch("/api/members");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch members");
-        }
-
-        const data = await response.json();
-        setMembers(data.members || []);
-      } catch (err) {
-        setError("メンバーデータの取得に失敗しました");
-        console.error("Error fetching members:", err);
-      } finally {
-        setMembersLoading(false);
+      // 土曜日になったら週を確定
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
       }
-    };
+    }
 
-    fetchMembers();
-  }, []);
+    // 最終週に翌月の日付で埋める
+    if (currentWeek.length > 0) {
+      const remainingDays = 7 - currentWeek.length;
+      for (let i = 1; i <= remainingDays; i++) {
+        const date = new Date(year, month, i);
+        currentWeek.push({
+          date,
+          day: i,
+          isCurrentMonth: false,
+          isToday: false,
+          isSelected: false,
+          shift: null,
+        });
+      }
+      weeks.push(currentWeek);
+    }
+
+    return weeks;
+  };
 
   // WorkTimeTypes一覧を取得
   useEffect(() => {
@@ -112,27 +140,33 @@ export function Calendar() {
     fetchWorkTimeTypes();
   }, []);
 
-  // 月が変わったら選択日を1日に変更
+  // 月が変わったら選択日を1日または今日に変更
   useEffect(() => {
-    const selectedYear = selectedDate.getFullYear();
-    const selectedMonth = selectedDate.getMonth() + 1;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayYear = today.getFullYear();
+    const todayMonth = today.getMonth() + 1;
 
-    // 選択中の日付が表示中の月と異なる場合、選択日を表示中の月の1日に変更
-    if (selectedYear !== year || selectedMonth !== month) {
+    // 表示中の月が今月の場合は今日を選択、それ以外は1日を選択
+    if (year === todayYear && month === todayMonth) {
+      setSelectedDate(today);
+    } else {
       const newSelectedDate = new Date(year, month - 1, 1);
       newSelectedDate.setHours(0, 0, 0, 0);
       setSelectedDate(newSelectedDate);
     }
-  }, [year, month, selectedDate]);
+  }, [year, month]);
 
-  // 月が変わったらシフトデータを再取得（全メンバー分）
+  // 月が変わったらシフトデータを再取得（自分のシフトのみ）
   useEffect(() => {
     const fetchShifts = async () => {
       setShiftsLoading(true);
       setError(null);
 
       try {
-        const response = await fetch(`/api/shifts?year=${year}&month=${month}`);
+        const response = await fetch(
+          `/api/shifts/my?year=${year}&month=${month}`,
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch shifts");
@@ -176,82 +210,99 @@ export function Calendar() {
     setMonth(now.getMonth() + 1);
   };
 
-  const handleDayClick = (
-    member: Member,
-    date: Date,
-    shift: ShiftData | null,
-  ) => {
-    // シフト設定モードの場合は何もしない（パターン選択で処理）
+  const handleDayClick = (day: CalendarDay) => {
     if (isShiftSetupMode) {
-      return;
-    }
-
-    setEditingMember(member);
-    setEditingDate(date);
-    if (shift) {
-      setEditingShift({
-        id: shift.id,
-        workTimeTypeId: shift.workTimeType?.id || null,
-        note: shift.note,
-      });
+      // シフト設定モード: 日付を選択
+      if (day.isCurrentMonth) {
+        setSelectedDate(day.date);
+      }
     } else {
-      setEditingShift(null);
+      // 通常モード: シフト編集モーダルを開く
+      if (!day.isCurrentMonth) return;
+
+      setEditingDate(day.date);
+      if (day.shift) {
+        setEditingShift({
+          id: day.shift.id,
+          workTimeTypeId: day.shift.workTimeType?.id || null,
+          note: day.shift.note,
+        });
+      } else {
+        setEditingShift(null);
+      }
+      setIsModalOpen(true);
     }
-    setIsModalOpen(true);
   };
 
   const handleToggleShiftSetupMode = () => {
     setIsShiftSetupMode(!isShiftSetupMode);
-    if (!isShiftSetupMode && members.length > 0) {
-      // シフト設定モードを開始する際、最初のメンバーを選択
-      setSelectedMemberForSetup(members[0]);
-    } else {
-      setSelectedMemberForSetup(null);
-    }
   };
 
-  const handleQuickSetShift = async (workTimeTypeId: string | null) => {
-    if (!selectedMemberForSetup) return;
+  const handlePatternClick = async (workTimeTypeId: string | null) => {
+    if (!isShiftSetupMode) return;
 
-    // 今月の全日にシフトを設定（簡易版）
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const promises = [];
+    const dateStr = selectedDate.toISOString().split("T")[0];
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month - 1, day);
-      const dateStr = date.toISOString().split("T")[0];
+    // 楽観的UI更新
+    const newShift: ShiftData = {
+      id: "temp-id",
+      memberId: "temp-member",
+      date: dateStr,
+      note: null,
+      workTimeType: workTimeTypeId
+        ? workTimeTypes.find((wtt) => wtt.id === workTimeTypeId) || null
+        : null,
+      member: { id: "temp-member", name: "", isSelf: true },
+    };
 
-      promises.push(
-        fetch("/api/shifts/upsert", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            memberId: selectedMemberForSetup.id,
-            date: dateStr,
-            workTimeTypeId,
-            note: "",
-          }),
-        }),
-      );
+    setShifts((prev) => {
+      const filtered = prev.filter((s) => s.date !== dateStr);
+      return [...filtered, newShift];
+    });
+
+    // 選択日を翌日に移動
+    const nextDate = new Date(selectedDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    // 月末を超えた場合は翌月の1日に移動
+    if (nextDate.getMonth() !== selectedDate.getMonth()) {
+      setYear(nextDate.getFullYear());
+      setMonth(nextDate.getMonth() + 1);
     }
+    setSelectedDate(nextDate);
 
-    await Promise.all(promises);
+    // バックグラウンドでAPI呼び出し
+    try {
+      await fetch("/api/shifts/upsert", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: dateStr,
+          workTimeTypeId,
+        }),
+      });
 
-    // シフトデータを再取得
-    const response = await fetch(`/api/shifts?year=${year}&month=${month}`);
-    const result = await response.json();
-    setShifts(result.shifts || []);
+      // 成功したらデータを再取得
+      const response = await fetch(
+        `/api/shifts/my?year=${year}&month=${month}`,
+      );
+      const result = await response.json();
+      setShifts(result.shifts || []);
+    } catch (err) {
+      // エラー時はトースト通知（簡易版: console.error）
+      console.error("Failed to save shift:", err);
+      // シフトデータを元に戻す
+      setShifts((prev) => prev.filter((s) => s.date !== dateStr));
+    }
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    setEditingMember(null);
     setEditingDate(null);
     setEditingShift(null);
   };
 
   const handleSaveShift = async (data: {
-    memberId: string;
     date: string;
     workTimeTypeId: string | null;
     note: string;
@@ -263,7 +314,7 @@ export function Calendar() {
     });
 
     // シフトデータを再取得
-    const response = await fetch(`/api/shifts?year=${year}&month=${month}`);
+    const response = await fetch(`/api/shifts/my?year=${year}&month=${month}`);
     const result = await response.json();
     setShifts(result.shifts || []);
   };
@@ -274,13 +325,12 @@ export function Calendar() {
     });
 
     // シフトデータを再取得
-    const response = await fetch(`/api/shifts?year=${year}&month=${month}`);
+    const response = await fetch(`/api/shifts/my?year=${year}&month=${month}`);
     const result = await response.json();
     setShifts(result.shifts || []);
   };
 
-  const memberRows = generateMemberRows();
-  const isLoading = shiftsLoading || membersLoading;
+  const calendarWeeks = generateCalendarWeeks();
 
   return (
     <div className="w-full mx-auto">
@@ -298,53 +348,76 @@ export function Calendar() {
           <p className="text-error text-sm">{error}</p>
         </div>
       )}
-      {isLoading ? (
+      {shiftsLoading ? (
         <div className="flex items-center justify-center p-8">
           <div className="text-foreground/60">読み込み中...</div>
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-background">
-                <th className="sticky left-0 z-10 bg-background border border-foreground/20 p-2 text-sm font-semibold text-foreground min-w-[100px]">
-                  メンバー
-                </th>
-                {Array.from(
-                  { length: new Date(year, month, 0).getDate() },
-                  (_, i) => {
-                    const day = i + 1;
-                    return (
-                      <th
-                        key={`day-${day}`}
-                        className="border border-foreground/20 p-2 text-sm font-semibold text-foreground min-w-[80px]"
-                      >
-                        {day}
-                      </th>
-                    );
-                  },
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {memberRows.map((row) => (
-                <tr key={row.member.id}>
-                  <td className="sticky left-0 z-10 bg-background border border-foreground/20 p-2 text-sm font-medium text-foreground">
-                    {row.member.name}
-                  </td>
-                  {row.days.map((day) => {
+          <div className="min-w-[700px]">
+            {/* 曜日ヘッダー */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {["日", "月", "火", "水", "木", "金", "土"].map((day, i) => (
+                <div
+                  key={day}
+                  className={`text-center text-sm font-semibold py-2 ${
+                    i === 0
+                      ? "text-error"
+                      : i === 6
+                        ? "text-accent-blue"
+                        : "text-foreground"
+                  }`}
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+            {/* カレンダーグリッド */}
+            <div className="space-y-1">
+              {calendarWeeks.map((week) => (
+                <div
+                  key={week[0].date.toISOString()}
+                  className="grid grid-cols-7 gap-1"
+                >
+                  {week.map((day, dayIndex) => {
                     const dateKey = day.date.toISOString().split("T")[0];
                     return (
-                      <td
+                      <button
+                        type="button"
                         key={dateKey}
-                        className="border border-foreground/20 p-1 cursor-pointer hover:bg-primary/10 transition-colors"
-                        onClick={() =>
-                          handleDayClick(row.member, day.date, day.shift)
-                        }
+                        onClick={() => handleDayClick(day)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleDayClick(day);
+                          }
+                        }}
+                        className={`
+                          min-h-[100px] border rounded-lg p-2 cursor-pointer transition-all text-left
+                          ${day.isCurrentMonth ? "bg-background hover:bg-primary/5" : "bg-foreground/5"}
+                          ${day.isToday ? "ring-2 ring-primary" : "border-foreground/20"}
+                          ${day.isSelected ? "bg-primary-pale ring-2 ring-primary" : ""}
+                          ${isShiftSetupMode && day.isCurrentMonth ? "hover:ring-2 hover:ring-primary/50" : ""}
+                        `}
                       >
-                        {day.shift ? (
+                        {/* 日付（左上） */}
+                        <div
+                          className={`text-sm font-semibold mb-1 ${
+                            day.isCurrentMonth
+                              ? dayIndex === 0
+                                ? "text-error"
+                                : dayIndex === 6
+                                  ? "text-accent-blue"
+                                  : "text-foreground"
+                              : "text-foreground/40"
+                          }`}
+                        >
+                          {day.day}
+                        </div>
+                        {/* シフト情報 */}
+                        {day.shift && day.isCurrentMonth && (
                           <div
-                            className="rounded px-1 py-2 text-xs relative"
+                            className="rounded px-2 py-1 text-xs relative"
                             style={{
                               backgroundColor:
                                 day.shift.workTimeType?.color || "#e5e7eb",
@@ -364,79 +437,55 @@ export function Calendar() {
                               <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-black rounded-full" />
                             )}
                           </div>
-                        ) : (
-                          <div className="h-12" />
                         )}
-                      </td>
+                      </button>
                     );
                   })}
-                </tr>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
       )}
       {/* シフト設定モード */}
-      {isShiftSetupMode && selectedMemberForSetup && (
+      {isShiftSetupMode && (
         <div className="mt-4 p-4 bg-background border border-primary rounded-lg">
-          <div className="mb-3">
-            <label className="block text-sm font-medium text-foreground mb-2">
-              対象メンバー
-            </label>
-            <select
-              value={selectedMemberForSetup.id}
-              onChange={(e) => {
-                const member = members.find((m) => m.id === e.target.value);
-                if (member) setSelectedMemberForSetup(member);
-              }}
-              className="px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground"
+          <p className="text-sm font-medium text-foreground mb-3">
+            シフトパターンをクリックしてください
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handlePatternClick(null)}
+              className="px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-all hover:scale-105"
             >
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
+              休み
+            </button>
+            {workTimeTypes
+              .filter((wtt) => wtt.isActive)
+              .map((wtt) => (
+                <button
+                  key={wtt.id}
+                  type="button"
+                  onClick={() => handlePatternClick(wtt.id)}
+                  className="px-4 py-2 text-sm font-medium rounded-md transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: wtt.color || "#e5e7eb",
+                    color: "#000",
+                  }}
+                >
+                  <div className="font-semibold">{wtt.name}</div>
+                  <div className="text-xs opacity-80">
+                    {wtt.startTime}-{wtt.endTime}
+                  </div>
+                </button>
               ))}
-            </select>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-foreground mb-2">
-              月全体にパターンを適用
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickSetShift(null)}
-                className="px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                休み
-              </button>
-              {workTimeTypes
-                .filter((wtt) => wtt.isActive)
-                .map((wtt) => (
-                  <button
-                    key={wtt.id}
-                    type="button"
-                    onClick={() => handleQuickSetShift(wtt.id)}
-                    className="px-4 py-2 text-sm font-medium rounded-md transition-colors hover:opacity-80"
-                    style={{
-                      backgroundColor: wtt.color || "#e5e7eb",
-                      color: "#000",
-                    }}
-                  >
-                    {wtt.name}
-                    <div className="text-xs opacity-80">
-                      {wtt.startTime}-{wtt.endTime}
-                    </div>
-                  </button>
-                ))}
-            </div>
           </div>
         </div>
       )}
       <ShiftEditModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        member={editingMember}
         date={editingDate}
         initialShift={editingShift}
         workTimeTypes={workTimeTypes}

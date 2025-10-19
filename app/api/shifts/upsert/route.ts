@@ -12,14 +12,11 @@ export async function PUT(request: Request) {
 
     // リクエストボディ取得
     const body = await request.json();
-    const { memberId, date, workTimeTypeId, note } = body;
+    const { date, workTimeTypeId, note } = body;
 
     // バリデーション
-    if (!memberId || !date) {
-      return NextResponse.json(
-        { error: "memberId and date are required" },
-        { status: 400 },
-      );
+    if (!date) {
+      return NextResponse.json({ error: "date is required" }, { status: 400 });
     }
 
     // ユーザー取得
@@ -31,13 +28,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // メンバーの所有権チェック
-    const member = await prisma.member.findUnique({
-      where: { id: memberId },
+    // 自分自身のMemberを取得
+    const selfMember = await prisma.member.findFirst({
+      where: {
+        userId: user.id,
+        isSelf: true,
+        isActive: true,
+      },
     });
 
-    if (!member || member.userId !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!selfMember) {
+      return NextResponse.json(
+        { error: "Self member not found" },
+        { status: 404 },
+      );
     }
 
     // 日付をDateオブジェクトに変換
@@ -59,12 +63,12 @@ export async function PUT(request: Request) {
     const shift = await prisma.shift.upsert({
       where: {
         memberId_date: {
-          memberId,
+          memberId: selfMember.id,
           date: shiftDate,
         },
       },
       create: {
-        memberId,
+        memberId: selfMember.id,
         date: shiftDate,
         workTimeTypeId: workTimeTypeId !== undefined ? workTimeTypeId : null,
         note: note !== undefined ? note : null,
