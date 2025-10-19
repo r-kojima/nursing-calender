@@ -392,7 +392,7 @@ export function Calendar() {
                         }
                       }}
                       className={`
-                        aspect-square sm:min-h-[100px] border rounded p-1 sm:p-2 cursor-pointer transition-all flex flex-col
+                        min-h-[80px] sm:min-h-[120px] border rounded p-1 sm:p-2 cursor-pointer transition-all flex flex-col
                         ${day.isCurrentMonth ? "bg-background hover:bg-primary/5" : "bg-foreground/5"}
                         ${day.isToday ? "ring-2 ring-primary" : "border-foreground/20"}
                         ${day.isSelected ? "bg-primary-pale ring-2 ring-primary" : ""}
