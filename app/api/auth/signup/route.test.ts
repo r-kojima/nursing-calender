@@ -95,6 +95,12 @@ describe("POST /api/auth/signup", () => {
         image: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        googleAccessToken: null,
+        googleRefreshToken: null,
+        googleTokenExpiry: null,
+        googleCalendarEmail: null,
+        googleCalendarLastSync: null,
+        googleCalendarSyncEnabled: false
       });
 
       const request = mockRequest({
