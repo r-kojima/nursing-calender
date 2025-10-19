@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { DayCell } from ".";
 import type { CalendarDay } from "../types";
+import { DayCell } from ".";
 
 describe("DayCell", () => {
   const createDay = (overrides?: Partial<CalendarDay>): CalendarDay => ({
@@ -37,6 +37,7 @@ describe("DayCell", () => {
     const day = createDay({
       shift: {
         id: "1",
+        memberId: "self-member-1",
         date: "2024-05-15",
         note: null,
         workTimeType: {
@@ -45,6 +46,11 @@ describe("DayCell", () => {
           startTime: "07:00",
           endTime: "16:00",
           color: "#FF6B35",
+        },
+        member: {
+          id: "self-member-1",
+          name: "自分",
+          isSelf: true,
         },
       },
     });
