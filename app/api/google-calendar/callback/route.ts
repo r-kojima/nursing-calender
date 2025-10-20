@@ -6,10 +6,13 @@ import { encrypt } from "@/app/lib/encryption";
 import { syncInitialShifts } from "@/app/lib/google-calendar/sync";
 
 export async function GET(request: Request) {
+  console.log("[Google Calendar Callback] Starting OAuth callback");
   try {
     // 1. 認証チェック
     const session = await auth();
+    console.log("[Google Calendar Callback] Session:", session?.user?.email);
     if (!session?.user?.email) {
+      console.error("[Google Calendar Callback] No session found");
       return NextResponse.redirect(
         new URL("/login?error=unauthorized", request.url),
       );
@@ -58,16 +61,24 @@ export async function GET(request: Request) {
     );
 
     // 7. 認証コードをトークンに交換
+    console.log("[Google Calendar Callback] Exchanging code for tokens");
     const { tokens } = await oauth2Client.getToken(code);
+    console.log(
+      "[Google Calendar Callback] Tokens received:",
+      !!tokens.access_token,
+      !!tokens.refresh_token,
+    );
 
     if (!tokens.access_token || !tokens.refresh_token) {
       throw new Error("Failed to obtain tokens");
     }
 
     // 8. Googleアカウント情報取得（メールアドレス）
+    console.log("[Google Calendar Callback] Getting user info");
     oauth2Client.setCredentials(tokens);
     const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
     const userInfo = await oauth2.userinfo.get();
+    console.log("[Google Calendar Callback] User info:", userInfo.data.email);
 
     // 9. ユーザー取得
     const user = await prisma.user.findUnique({
@@ -81,6 +92,7 @@ export async function GET(request: Request) {
     }
 
     // 10. トークンを暗号化してDBに保存
+    console.log("[Google Calendar Callback] Saving tokens to database");
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -94,13 +106,15 @@ export async function GET(request: Request) {
         googleCalendarLastSync: new Date(),
       },
     });
+    console.log("[Google Calendar Callback] Successfully saved to database");
 
     // 11. 既存シフトの初回同期（非同期実行）
     syncInitialShifts(user.id).catch((error) => {
-      console.error("Initial sync failed:", error);
+      console.error("[Google Calendar Callback] Initial sync failed:", error);
     });
 
     // 12. 成功リダイレクト
+    console.log("[Google Calendar Callback] Redirecting to success page");
     const response = NextResponse.redirect(
       new URL("/settings/google-calendar?success=connected", request.url),
     );

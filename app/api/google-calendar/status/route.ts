@@ -3,10 +3,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 
 export async function GET() {
+  console.log("[Google Calendar Status] Fetching status");
   try {
     // 1. 認証チェック
     const session = await auth();
     if (!session?.user?.email) {
+      console.error("[Google Calendar Status] No session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -22,11 +24,18 @@ export async function GET() {
     });
 
     if (!user) {
+      console.error("[Google Calendar Status] User not found");
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    console.log(
+      "[Google Calendar Status] User sync enabled:",
+      user.googleCalendarSyncEnabled,
+    );
+
     // 3. 連携されていない場合
     if (!user.googleCalendarSyncEnabled) {
+      console.log("[Google Calendar Status] Returning not connected");
       return NextResponse.json({
         connected: false,
         syncEnabled: false,
@@ -42,32 +51,32 @@ export async function GET() {
       },
     });
 
-    if (!selfMember) {
-      return NextResponse.json(
-        { error: "Self member not found" },
-        { status: 404 },
-      );
-    }
+    // selfMemberが存在しない場合は統計を0で返す
+    let syncedCount = 0;
+    let pendingCount = 0;
+    let failedCount = 0;
 
-    // 5. 同期ステータス別の件数を集計
-    const [syncedCount, pendingCount, failedCount] = await Promise.all([
-      prisma.shift.count({
-        where: { memberId: selfMember.id, syncStatus: "SYNCED" },
-      }),
-      prisma.shift.count({
-        where: { memberId: selfMember.id, syncStatus: "PENDING" },
-      }),
-      prisma.shift.count({
-        where: { memberId: selfMember.id, syncStatus: "FAILED" },
-      }),
-    ]);
+    if (selfMember) {
+      // 5. 同期ステータス別の件数を集計
+      [syncedCount, pendingCount, failedCount] = await Promise.all([
+        prisma.shift.count({
+          where: { memberId: selfMember.id, syncStatus: "SYNCED" },
+        }),
+        prisma.shift.count({
+          where: { memberId: selfMember.id, syncStatus: "PENDING" },
+        }),
+        prisma.shift.count({
+          where: { memberId: selfMember.id, syncStatus: "FAILED" },
+        }),
+      ]);
+    }
 
     // 6. トークン有効期限チェック
     const isTokenExpired = user.googleTokenExpiry
       ? user.googleTokenExpiry < new Date()
       : false;
 
-    return NextResponse.json({
+    const response = {
       connected: true,
       syncEnabled: user.googleCalendarSyncEnabled,
       email: user.googleCalendarEmail,
@@ -79,7 +88,10 @@ export async function GET() {
         failed: failedCount,
         total: syncedCount + pendingCount + failedCount,
       },
-    });
+    };
+
+    console.log("[Google Calendar Status] Returning:", response);
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error fetching sync status:", error);
     return NextResponse.json(

@@ -24,7 +24,10 @@ export async function GET() {
     // 4. Google認証URLを生成
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: "offline", // リフレッシュトークンを取得
-      scope: ["https://www.googleapis.com/auth/calendar.events"],
+      scope: [
+        "https://www.googleapis.com/auth/calendar.events",
+        "https://www.googleapis.com/auth/userinfo.email",
+      ],
       state: state,
       prompt: "consent", // 毎回同意画面を表示してリフレッシュトークンを確実に取得
     });
